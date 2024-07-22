@@ -2,9 +2,11 @@ import { Response } from 'express';
 import { logger } from '../config';
 import { isError } from '../utils/errors';
 
-export const handleValidationError = (res: Response, error: Error, message: string) => {
+
+//! Gotta change the logic so it would be handleClientError and handleServerError
+export const handleValidationError = (res: Response, error: Error, message: string, status: number = 400) => {
   logger.error(`${message}: ${error.message}`);
-  res.status(400).json({ error: `${message}: ${error.message}` });
+  res.status(status).json({ error: `${message}: ${error.message}` });
 };
 
 export const handleServerError = (res: Response, error: unknown, context: string) => {

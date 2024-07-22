@@ -4,8 +4,8 @@ import { type Other } from 'grammy/out/core/api.d';
 import { type RawApi } from 'grammy/out/core/client.d';
 
 import { type Conversation, type ConversationFlavor } from '@grammyjs/conversations';
-import { getContactsByCity, getUser, createUser, decrementTrialState } from './queries';
-import { User } from './schemas';
+import { User, ContactPresentable } from './schemas';
+import { apiService } from './requests/apiService';
 
 interface BotConfig {
   user: User;
@@ -15,6 +15,7 @@ export type BotContext = Context &
   ConversationFlavor & {
     config: BotConfig;
   };
+
 
 const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (chatId: string | number, text: string, reply_markup: Other<RawApi, 'sendMessage', 'chat_id' | 'text'> | undefined) => {
   const parts = text.match(new RegExp(`(.|[\r\n]){1,${limit}}`, 'g')) || [];
@@ -30,23 +31,27 @@ const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);
 
 const createMainKeyboard = () => new Keyboard().text('📞 Контакты').text('💳 Подписка').row().text('❓ Помощь').resized();
 
-// Функция высшего порядка для отправки большого текста
-
 export const constraintMiddleware = async (ctx: BotContext, next: NextFunction) => {
   try {
     const userId = ctx.from?.id;
     if (!userId) throw new Error('User id is undefined');
 
-    const user = await getUser(userId);
+    const user = await apiService.fetchUser({ userId });
     if (!user) {
-      await ctx.reply('Please start the conversation with the /start command to use the bot.');
+      await ctx.reply('User not found. Please start the conversation with the /start command to use the bot.');
+      return;
+    }
+
+    // Check if user object is empty
+    if (Object.keys(user).length === 0) {
+      await ctx.reply('User data is incomplete. Please start the conversation with the /start command to set up your account.');
       return;
     }
 
     const now = new Date();
 
     if (user.trial_state > 0) {
-      await decrementTrialState(userId);
+      await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
       ctx.config = { user: { ...user, trial_state: user.trial_state - 1 } };
       await next();
     } else if (user.subscription_expiration_date && user.subscription_expiration_date > now) {
@@ -68,11 +73,15 @@ export const handleStartCommand = async (ctx: BotContext) => {
     const chatId = ctx.chat?.id;
 
     if (!userId || !chatId) throw new Error('User or chat id is undefined');
-
-    let user = await getUser(userId);
+    logger.debug(config.api_base_url);
+    let user = await apiService.fetchUser({ userId });
     if (!user) {
-      await createUser(userId, ctx.from?.username, ctx.from?.first_name, ctx.from?.last_name);
-      user = await getUser(userId);
+      user = await apiService.createUser({
+        user_id: userId,
+        username: ctx.from?.username ?? '',
+        first_name: ctx.from?.first_name ?? undefined,
+        last_name: ctx.from?.last_name ?? undefined
+      });
       if (!user) throw new Error('Failed to create user');
       await ctx.reply(`Welcome! You have ${user.trial_state} trial attempts`, { reply_markup: createMainKeyboard() });
     } else {
@@ -115,7 +124,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       return;
     }
 
-    const contacts = await getContactsByCity(userResponse);
+    const contacts = await apiService.fetchContactsByCity({ cityName: userResponse });
 
     if (contacts.length === 0) {
       await ctx.reply(`Извините, контакты для города "${userResponse}" не найдены.`, {
@@ -124,7 +133,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       return;
     }
 
-    const contactMessage = contacts.map((contact) => `${contact.name} – ${contact.description} – ${contact.city} – ${contact.phone_1}`).join('\n');
+    const contactMessage = contacts.map((contact: ContactPresentable) => `${contact.name} – ${contact.description} – ${contact.city} – ${contact.phone_1}`).join('\n');
 
     const chatId = ctx.chat?.id;
     if (!chatId) {

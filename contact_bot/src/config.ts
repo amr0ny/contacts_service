@@ -1,27 +1,18 @@
 import dotenv from 'dotenv';
 import winston from 'winston';
-import { PoolConfig } from 'pg';
 
 dotenv.config({ path: '../.env' });
 interface Config {
   token: string;
   logLevel: string;
   nodeEnv: string;
-  maxDbRetries: number;
-  poolConfig: PoolConfig;
+  api_base_url: URL;
 }
 const config: Config = {
   token: process.env.TG_TOKEN as string,
   logLevel: process.env.LOG_LEVEL as string,
   nodeEnv: process.env.NODE_ENV as string,
-  maxDbRetries: Number(process.env.MAX_DB_RETRIES),
-  poolConfig: {
-    user: process.env.POSTGRES_USER || '',
-    host: process.env.POSTGRES_HOST || '',
-    password: process.env.POSTGRES_PASSWORD || '',
-    database: process.env.POSTGRES_NAME || '',
-    port: Number(process.env.POSTGRES_PORT || ''),
-  },
+  api_base_url: new URL(`http://${process.env.API_HOST || ''}:${process.env.API_PORT || ''}`),
 };
 
 const logger = winston.createLogger({

@@ -28,6 +28,9 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    
+    expose:
+      - ${API_PORT}
     volumes:
       - ./api/logs:/opt/app/logs
     depends_on:

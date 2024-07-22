@@ -1,17 +1,17 @@
 import Joi from 'joi';
 
 const userIdSchema = Joi.object({
-    id: Joi.number(),
+    id: Joi.number().required().integer(),
 });
 
 export const userSchema = Joi.object({
     user_id: Joi.number().integer().required(),
     username: Joi.string().required(),
-    first_name: Joi.string().optional().allow(null),
-    last_name: Joi.string().optional().allow(null),
-    trial_state: Joi.number().integer().required(),
-    subscription_expiration_date: Joi.date().optional().allow(null),
-    created_at: Joi.date().optional(),
+    first_name: Joi.string().allow(null),
+    last_name: Joi.string().allow(null),
+    trial_state: Joi.number().integer(),
+    subscription_expiration_date: Joi.date().allow(null),
+    created_at: Joi.date(),
 });
 
 const userUpdateSchema = userSchema.keys({
@@ -19,8 +19,8 @@ const userUpdateSchema = userSchema.keys({
     username: Joi.forbidden(),
     first_name: Joi.forbidden(),
     last_name: Joi.forbidden(),
-    trial_state: Joi.number().integer().optional(),
-    subscription_expiration_date: Joi.date().optional(),
+    trial_state: Joi.number().integer(),
+    subscription_expiration_date: Joi.date(),
     created_at: Joi.forbidden()
 }).min(1);
 

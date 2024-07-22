@@ -11,10 +11,11 @@ export const userDetail = controllerWrapper(async (req: Request, res: Response) 
     if (isNaN(userId)) {
       return handleValidationError(res, new Error('Invalid user ID'), 'Invalid user ID');
     }
-  
+    logger.debug(userId);
     const user = await getUser(userId);
+    logger.debug(user);
     if (!user) {
-      return handleValidationError(res, new Error('User not found'), 'User not found');
+      return handleValidationError(res, new Error('User not found'), 'User not found', 404);
     }
   
     const { error: userObjError, value: validatedUser } = validateUser(user);
@@ -26,33 +27,39 @@ export const userDetail = controllerWrapper(async (req: Request, res: Response) 
 });
 
 export const userCreate = controllerWrapper(async (req: Request, res: Response) => {
+  logger.debug(req.body);
   const { error: userError, value: validatedUser } = validateUser(req.body);
   if (userError) {
     return handleValidationError(res, userError, 'Invalid user data');
   }
 
-  await createUser(validatedUser.id, validatedUser.username, validatedUser.firstName, validatedUser.lastName);
-  res.status(200).json({});
+  const createdUser = await createUser(validatedUser.user_id, validatedUser.username, validatedUser.first_name, validatedUser.last_name);
+  res.status(201).json(createdUser);
 });
 
 export const userUpdate = controllerWrapper(async (req: Request, res: Response): Promise<void> => {
-    const userId = parseInt(req.params.userId, 10);
-    if (isNaN(userId)) {
-      handleValidationError(res, new Error('Invalid user ID'), 'Invalid user ID');
-      return;
-    }
-    logger.debug(req.body);
-    const { error: fieldsError, value: validatedFields } = validateUpdateUser(req.body);
-    if (fieldsError) {
-      handleValidationError(res, fieldsError, 'Invalid update fields');
-      return;
-    }
-  
-    if (Object.keys(validatedFields).length === 0) {
-      res.status(400).json({ message: 'No valid fields to update' });
-      return;
-    }
-  
-    await updateUserFields(userId, validatedFields);
-    res.status(200).json({ message: 'User updated successfully' });
-  });
+  const userId = parseInt(req.params.userId, 10);
+  if (isNaN(userId)) {
+    handleValidationError(res, new Error('Invalid user ID'), 'Invalid user ID');
+    return;
+  }
+
+  const { error: fieldsError, value: validatedFields } = validateUpdateUser(req.body);
+  if (fieldsError) {
+    handleValidationError(res, fieldsError, 'Invalid update fields');
+    return;
+  }
+
+  if (Object.keys(validatedFields).length === 0) {
+    res.status(400).json({ message: 'No valid fields to update' });
+    return;
+  }
+
+  const updatedUser = await updateUserFields(userId, validatedFields);
+  if (!updatedUser) {
+    handleValidationError(res, new Error('User not found'), 'User not found', 404);
+    return;
+  }
+
+  res.status(200).json(updatedUser);
+});

@@ -29,7 +29,7 @@ export const contactsByCityList = controllerWrapper(async (req: Request, res: Re
 
 export const cityNamesList = controllerWrapper(async (req: Request, res: Response) => {
   const cityNames = await getCityNames();
-    logger.debug(cityNames);
+  logger.debug(cityNames);
   const validatedCities = cityNames
     .map(city => {
       const { error, value } = validateCityName(city);
