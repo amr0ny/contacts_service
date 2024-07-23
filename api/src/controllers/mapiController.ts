@@ -51,7 +51,8 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
 });
 
 export const notificationReceive = controllerWrapper(async (req: Request, res: Response) => {
-    const { error, value: valueReq } = validateNotificationRequest(req);
+    logger.debug(req.body);
+    const { error, value: valueReq } = validateNotificationRequest(req.body);
     if (error)
         return handleValidationError(res, error, 'Invalid MAPI client request');
 
