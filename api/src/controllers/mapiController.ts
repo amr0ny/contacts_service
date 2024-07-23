@@ -9,7 +9,7 @@ import { v4 as uuid4 } from 'uuid';
 import { validateInitResponse, validateNotificationRequest } from '../validators/mapiValidators';
 import { createTransaction, updateTransactionFields } from '../services/transactions';
 import { validateUserId } from '../validators/userValidators';
-import { subscribeUser } from '../services/users';
+import { getUser, subscribeUser } from '../services/users';
 
 
 type MAPIMethod = (dataObj: DataObj, password: string) => Promise<AxiosResponse<any, any>>;
@@ -29,6 +29,10 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
     if (errorReq) { 
             return handleValidationError(res, errorReq, 'Invalid user request');
     }
+    const user = await getUser(valueReq.user_id);
+    
+    if (!user)
+        throw new Error('User not found');
     const dataObj = {
         TerminalKey: config.acquiringConfig.terminalKey,
         Amount: config.acquiringConfig.product.amount,
@@ -41,8 +45,9 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
     const { error, value } = validateInitResponse(mapiRes.data);
     if (error) 
         return handleValidationError(res, error, 'An error occured while requesting MAPI.');
-    await createTransaction(value.OrderId, value.PaymentId, valueReq.userId, value.Amount, value.Status);
-    res.status(201).json({ payment_url: value.PaymentUrl });
+
+    await createTransaction(value.OrderId, value.PaymentId, user.id, value.Amount, value.Status);
+    res.status(201).json({ payment_url: value.PaymentURL });
 });
 
 export const notificationReceive = controllerWrapper(async (req: Request, res: Response) => {

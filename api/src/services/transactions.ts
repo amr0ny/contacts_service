@@ -40,8 +40,6 @@ export async function getTransactionFields(
    });
 }
 
-import { v4 as uuidv4 } from 'uuid';
-
 export async function createTransaction(
   orderId: string,
   paymentId: string,
@@ -52,7 +50,7 @@ export async function createTransaction(
   return withDB<Transaction>(async (client) => {
     
     const result = await client.query<Transaction>(
-      `INSERT INTO transactions (order_id, payment_id, user_id, amount, status)
+      `INSERT INTO transactions (id, payment_id, user_id, amount, status)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [orderId, paymentId, userId, amount, status]

@@ -15,7 +15,7 @@ export const userDetail = controllerWrapper(async (req: Request, res: Response) 
     const user = await getUser(userId);
     logger.debug(user);
     if (!user) {
-      return handleValidationError(res, new Error('User not found'), 'User not found', 404);
+      return handleValidationError(res, new Error('User not found'), 'User with the given user_id is not registered', 404);
     }
   
     const { error: userObjError, value: validatedUser } = validateUser(user);
