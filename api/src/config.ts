@@ -4,11 +4,20 @@ import { PoolConfig } from 'pg';
 
 dotenv.config({ path: '../dev.env' });
 
+interface AcquiringConfig {
+  terminalKey: string,
+  password: string,
+  product: {
+    amount: number,
+    description: string, 
+  }
+}
 interface Config {
   logLevel: string;
   nodeEnv: string;
   maxDbRetries: number;
   poolConfig: PoolConfig;
+  acquiringConfig: AcquiringConfig
 }
 
 const config: Config = {
@@ -22,6 +31,13 @@ const config: Config = {
     database: process.env.POSTGRES_NAME || '',
     port: Number(process.env.POSTGRES_PORT || ''),
   },
+  acquiringConfig: {
+    terminalKey: '1721314296114DEMO',
+    password: 'bYIS4MnOKw8CgUC_',
+    product: {
+      amount: 3000,
+      description: 'Lorem ipsum dolor...',
+    }}
 };
 
 const logger = winston.createLogger({

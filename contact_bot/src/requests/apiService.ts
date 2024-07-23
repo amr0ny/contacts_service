@@ -1,14 +1,5 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError, isAxiosError } from "axios";
-import { 
-  API_BASE_URL,
-  ContactPresentable, 
-  ContactsByCityListRequest, 
-  CreateUserRequest, 
-  UpdateUserRequest, 
-  User, 
-  UserDetailRequest, 
-  endpoints 
-} from '../schemas';
+import axios, { AxiosInstance, AxiosResponse, AxiosError, isAxiosError } from 'axios';
+import { API_BASE_URL, ContactPresentable, ContactsByCityListRequest, CreateUserRequest, InitTransactionResponse, InitUserPaymentRequest, UpdateUserRequest, User, UserDetailRequest, endpoints } from '../schemas';
 import { logger } from '../config';
 
 class ApiService {
@@ -82,6 +73,16 @@ class ApiService {
       return this.handleError(error);
     }
   }
-}
 
+  public async initUserPayment({ userId }: InitUserPaymentRequest): Promise<InitTransactionResponse> {
+    try {
+      const url = endpoints.initUserPayment();
+      logger.debug(url);
+      const response = await this.apiClient.post(url, {user_id: userId});
+      return this.handleResponse(response);
+    } catch (error) {
+      return this.handleError(error);
+    }
+  }
+}
 export const apiService = new ApiService();

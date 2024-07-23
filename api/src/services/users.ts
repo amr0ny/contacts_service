@@ -1,13 +1,7 @@
 import { withDB } from '../db';
 import { User, UserAllowedField, userAllowedFields } from '../schemas';
 
-export async function initUserTable() {
-  return withDB(async (client) => {
-    await client.query(
-      'CREATE TABLE IF NOT EXISTS users ( user_id BIGINT PRIMARY KEY, username VARCHAR(255), first_name VARCHAR(255), last_name VARCHAR(255), trial_state INT DEFAULT 2 NOT NULL, subscription_expiration_date TIMESTAMP, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP )',
-    );
-  });
-}
+
 
 export async function getUser(userId: number | undefined): Promise<User> {
   return withDB<User>(async (client) => {

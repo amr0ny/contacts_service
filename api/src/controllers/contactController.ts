@@ -12,7 +12,7 @@ export const contactsByCityList = controllerWrapper(async (req: Request, res: Re
     if (cityError) {
       return handleValidationError(res, cityError, 'Invalid city name');
     }
-  
+
     const contacts = await getContactsByCity(cityValue.city);
     const validatedContacts = contacts
       .map(contact => {

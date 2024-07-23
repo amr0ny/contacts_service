@@ -14,7 +14,6 @@ const config: Config = {
   nodeEnv: process.env.NODE_ENV as string,
   api_base_url: new URL(`http://${process.env.API_HOST || ''}:${process.env.API_PORT || ''}`),
 };
-
 const logger = winston.createLogger({
   level: config.logLevel,
   format: winston.format.json(),
@@ -29,6 +28,7 @@ if (config.nodeEnv !== 'production') {
     }),
   );
 }
+logger.debug(config.api_base_url);
 
 export { logger };
 export default config;

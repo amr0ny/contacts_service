@@ -1,5 +1,5 @@
 import config, { logger } from './config';
-import { Context, NextFunction, Keyboard, Bot } from 'grammy';
+import { Context, NextFunction, Keyboard, Bot, InlineKeyboard } from 'grammy';
 import { type Other } from 'grammy/out/core/api.d';
 import { type RawApi } from 'grammy/out/core/client.d';
 
@@ -16,7 +16,6 @@ export type BotContext = Context &
     config: BotConfig;
   };
 
-
 const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (chatId: string | number, text: string, reply_markup: Other<RawApi, 'sendMessage', 'chat_id' | 'text'> | undefined) => {
   const parts = text.match(new RegExp(`(.|[\r\n]){1,${limit}}`, 'g')) || [];
   for (let i = 0; i < parts.length; i++) {
@@ -31,39 +30,38 @@ const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);
 
 const createMainKeyboard = () => new Keyboard().text('📞 Контакты').text('💳 Подписка').row().text('❓ Помощь').resized();
 
-export const constraintMiddleware = async (ctx: BotContext, next: NextFunction) => {
-  try {
-    const userId = ctx.from?.id;
-    if (!userId) throw new Error('User id is undefined');
+export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('User id is undefined. Please start the conversation with the /start command.');
+    return;
+  }
 
-    const user = await apiService.fetchUser({ userId });
-    if (!user) {
-      await ctx.reply('User not found. Please start the conversation with the /start command to use the bot.');
-      return;
-    }
+  const user = await apiService.fetchUser({ userId });
+  if (!user || Object.keys(user).length === 0) {
+    await ctx.reply('User not found or data is incomplete. Please start the conversation with the /start command.');
+    return;
+  }
 
-    // Check if user object is empty
-    if (Object.keys(user).length === 0) {
-      await ctx.reply('User data is incomplete. Please start the conversation with the /start command to set up your account.');
-      return;
-    }
+  ctx.config = { user };
+  await next();
+};
 
-    const now = new Date();
+export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
+  const user = ctx.config?.user;
+  if (!user) return; // User check should have been done in previous middleware
 
-    if (user.trial_state > 0) {
-      await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
-      ctx.config = { user: { ...user, trial_state: user.trial_state - 1 } };
-      await next();
-    } else if (user.subscription_expiration_date && user.subscription_expiration_date > now) {
-      ctx.config = { user };
-      await next();
-    } else {
-      const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${user.subscription_expiration_date && user.subscription_expiration_date <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
-      await ctx.reply(message);
-    }
-  } catch (e) {
-    logger.error(`An error occurred while running middleware: ${e}`);
-    await ctx.reply('An error occurred. Please try again later or contact support.');
+  const now = new Date();
+
+  if (user.trial_state > 0) {
+    await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
+    ctx.config.user.trial_state -= 1;
+    await next();
+  } else if (user.subscription_expiration_date && user.subscription_expiration_date > now) {
+    await next();
+  } else {
+    const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${user.subscription_expiration_date && user.subscription_expiration_date <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
+    await ctx.reply(message);
   }
 };
 
@@ -73,14 +71,13 @@ export const handleStartCommand = async (ctx: BotContext) => {
     const chatId = ctx.chat?.id;
 
     if (!userId || !chatId) throw new Error('User or chat id is undefined');
-    logger.debug(config.api_base_url);
     let user = await apiService.fetchUser({ userId });
     if (!user) {
       user = await apiService.createUser({
         user_id: userId,
         username: ctx.from?.username ?? '',
         first_name: ctx.from?.first_name ?? undefined,
-        last_name: ctx.from?.last_name ?? undefined
+        last_name: ctx.from?.last_name ?? undefined,
       });
       if (!user) throw new Error('Failed to create user');
       await ctx.reply(`Welcome! You have ${user.trial_state} trial attempts`, { reply_markup: createMainKeyboard() });
@@ -121,6 +118,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('Название города не должно быть пустым. Попробуйте еще раз /contacts.', {
         reply_markup: createMainKeyboard(),
       });
+
       return;
     }
 
@@ -156,5 +154,60 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 };
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
-  await ctx.reply('Здесь будет информация о подписке и ее управлении.');
+  await ctx.reply('Для того, чтобы пользоваться возможностями бота без ограничений, оформите подписку.', {
+    reply_markup: new InlineKeyboard().text('✅ Оформить подписку', 'process_subscription')
+  });
+};
+
+export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
+  if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
+    await ctx.answerCallbackQuery('Произошла ошибка. Попробуйте еще раз.');
+    return;
+  }
+
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) {
+      await ctx.answerCallbackQuery('Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
+      return;
+    }
+
+    // Проверка, нужна ли пользователю подписка
+    const user = await apiService.fetchUser({ userId });
+    if (user && user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
+      await ctx.answerCallbackQuery('У вас уже есть активная подписка. Вы можете продлить ее позже.');
+      return;
+    }
+
+    const res = await apiService.initUserPayment({ userId: userId });
+    if (!res || !res.payment_url) {
+      throw new Error('Payment link is unavailable');
+    }
+
+    await ctx.answerCallbackQuery();
+    await ctx.editMessageText('Подписка 30 дней за 14 рублей', {
+      reply_markup: new InlineKeyboard().url('💸 Перейти к оплате', res.payment_url)
+    });
+
+    // Обновление данных пользователя (например, установка флага "ожидает оплаты")
+    // await apiService.updateUser(userId, { payment_pending: true });
+
+  } catch (error) {
+    logger.error(`An error occurred while handling initializing payment for subscription: ${error}`);
+    
+    if (error instanceof Error) {
+      if (error.message === 'Payment link is unavailable') {
+        await ctx.answerCallbackQuery('Извините, в данный момент сервис оплаты недоступен. Пожалуйста, попробуйте позже.');
+      } else {
+        await ctx.answerCallbackQuery('Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.');
+        /*
+        await ctx.editMessageText('Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.', {
+          reply_markup: createMainKeyboard()
+        });
+        */
+      }
+    } else {
+      await ctx.answerCallbackQuery('Произошла неизвестная ошибка. Пожалуйста, попробуйте позже.');
+    }
+  }
 };

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { validateUserId, validateUser, validateUpdateUser } from '../validators/userValidators';
+import { validateUser, validateUpdateUser } from '../validators/userValidators';
 import { createUser, getUser, updateUserFields } from '../services/users';
 import { handleValidationError } from '../utils/controllerUtils';
 import { controllerWrapper } from '../utils/controllerWrapper';

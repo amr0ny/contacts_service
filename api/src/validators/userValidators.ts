@@ -1,10 +1,13 @@
 import Joi from 'joi';
 
 const userIdSchema = Joi.object({
-    id: Joi.number().required().integer(),
+    user_id: Joi.number().required().integer(),
 });
 
 export const userSchema = Joi.object({
+    //! This could be a cause af fallings
+    //id: Joi.string().required().max(36),
+    id: Joi.string().max(36),
     user_id: Joi.number().integer().required(),
     username: Joi.string().required(),
     first_name: Joi.string().allow(null),
@@ -15,6 +18,7 @@ export const userSchema = Joi.object({
 });
 
 const userUpdateSchema = userSchema.keys({
+    id: Joi.forbidden(),
     user_id: Joi.forbidden(),
     username: Joi.forbidden(),
     first_name: Joi.forbidden(),

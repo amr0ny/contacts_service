@@ -1,6 +1,7 @@
 import config from './config';
 
 export interface User {
+  id?: string;
   user_id: number;
   username: string;
   first_name?: string;
@@ -17,7 +18,6 @@ export interface ContactPresentable {
   phone_1?: string;
 }
 
-
 export const API_BASE_URL = config.api_base_url;
 
 export const endpoints = {
@@ -25,9 +25,14 @@ export const endpoints = {
   createUser: () => 'api/v1/users',
   updateUser: (userId: number) => `api/v1/users/${userId}`,
   contactsByCityList: (cityName: string) => `api/v1/contacts/${cityName}`,
+  initUserPayment: () => `api/v1/users/subscribe`
 };
 
 export interface UserDetailRequest {
+  userId: number;
+}
+
+export interface InitUserPaymentRequest {
   userId: number;
 }
 
@@ -43,6 +48,9 @@ export interface UpdateUserRequest {
 }
 
 export interface ContactsByCityListRequest {
-  cityName: string,
+  cityName: string;
 }
 
+export interface InitTransactionResponse {
+  payment_url: string
+};
