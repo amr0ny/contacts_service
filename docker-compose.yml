@@ -28,7 +28,7 @@ services:
     env_file:
       - .env
     restart: unless-stopped
-    
+
     expose:
       - ${API_PORT}
     volumes:
@@ -57,5 +57,15 @@ services:
       - "80:80"
     depends_on:
       - admin
+  db_cleaner:
+    build: ./cleaner
+    env_file:
+      - .env
+    restart: always
+    volumes:
+      - ./cleaner/logs:/opt/app/logs
+    depends_on:
+      - admin
+      - postgres
 volumes:
   postgres_data:

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { handleValidationError } from '../utils/controllerUtils';
 import { controllerWrapper } from '../utils/controllerWrapper';
-import config, { logger }  from '../config';
+import config, { logger } from '../config';
 import { DataObj, mapiEndpoints } from '../schemas';
 import { appendToken } from '../utils/mapiUtils';
 import axios, { AxiosResponse } from 'axios';
@@ -25,12 +25,12 @@ const initMethod = MAPIMethod('https://securepay.tinkoff.ru/v2/Init');
 
 export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Response) => {
     logger.debug(`mapiPaymentInit: ${JSON.stringify(req.body)}`);
-    const { error: errorReq, value: valueReq }  = validateUserId(req.body);
-    if (errorReq) { 
-            return handleValidationError(res, errorReq, 'Invalid user request');
+    const { error: errorReq, value: valueReq } = validateUserId(req.body);
+    if (errorReq) {
+        return handleValidationError(res, errorReq, 'Invalid user request');
     }
     const user = await getUser(valueReq.user_id);
-    
+
     if (!user)
         throw new Error('User not found');
     const dataObj = {
@@ -43,7 +43,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
     const mapiRes = await initMethod(dataObj, config.acquiringConfig.password);
     logger.debug(`${JSON.stringify(mapiRes.data)}`);
     const { error, value } = validateInitResponse(mapiRes.data);
-    if (error) 
+    if (error)
         return handleValidationError(res, error, 'An error occured while requesting MAPI.');
 
     await createTransaction(value.OrderId, value.PaymentId, user.id, value.Amount, value.Status);
@@ -54,8 +54,8 @@ export const notificationReceive = controllerWrapper(async (req: Request, res: R
     const { error, value: valueReq } = validateNotificationRequest(req);
     if (error)
         return handleValidationError(res, error, 'Invalid MAPI client request');
-    
-    const transaction = await updateTransactionFields(valueReq.OrderId, {payment_id: valueReq.PaymentId, status: valueReq.Status });
+
+    const transaction = await updateTransactionFields(valueReq.OrderId, { payment_id: valueReq.PaymentId, status: valueReq.Status });
     if (!transaction) {
         throw Error('Transaction update failed.')
     }
