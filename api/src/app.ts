@@ -1,4 +1,4 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
+import express, { Application } from 'express';
 import { apiV1Router } from './routes/apiV1Routes';
 import { logger } from './config';
 import { apiV2Router } from './routes/apiV2Routes';

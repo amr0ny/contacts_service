@@ -27,7 +27,7 @@ export const contactsByCityList = controllerWrapper(async (req: Request, res: Re
   res.json(validatedContacts);
 });
 
-export const cityNamesList = controllerWrapper(async (req: Request, res: Response) => {
+export const cityNamesList = controllerWrapper(async (_req: Request, res: Response) => {
   const cityNames = await getCityNames();
   logger.debug(cityNames);
   const validatedCities = cityNames

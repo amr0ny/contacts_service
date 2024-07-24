@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { handleValidationError } from '../utils/controllerUtils';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import config, { logger } from '../config';
-import { DataObj, mapiEndpoints } from '../schemas';
+import { DataObj } from '../schemas';
 import { appendToken, checkToken } from '../utils/mapiUtils';
 import axios, { AxiosResponse } from 'axios';
 import { v4 as uuid4 } from 'uuid';
@@ -52,7 +52,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
 
 //! Perhaps gotta change something in order to protect it
 //! Gotta add the way of resolving when to send OK status
-export const notificationReceive = controllerWrapper(async (req: Request, res: Response) => {
+export const notificationReceive = controllerWrapper(async (req: Request, _res: Response) => {
     logger.debug(req.body);
     const { error, value: valueReq } = validateNotificationRequest(req.body);
     if (error)
