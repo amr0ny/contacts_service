@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es2016",
-    "module": "commonjs",
+    "lib": [
+      "es2017",
+      "dom"
+    ],
+    "target": "es2017",
     "outDir": "./dist",
     "rootDir": "./src",
     "sourceMap": true,
@@ -14,5 +17,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true
-  }
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
