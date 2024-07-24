@@ -20,3 +20,4 @@ export function sha256Utf8(input: string): string {
   const utf8Buffer = stringToUtf8(input);
   return crypto.createHash('sha256').update(utf8Buffer).digest('hex');
 }
+
