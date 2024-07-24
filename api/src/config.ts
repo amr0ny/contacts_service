@@ -7,9 +7,10 @@ dotenv.config({ path: '../dev.env' });
 interface AcquiringConfig {
   terminalKey: string,
   password: string,
+  notificationURL: string,
   product: {
     amount: number,
-    description: string, 
+    description: string,
   }
 }
 interface Config {
@@ -34,10 +35,13 @@ const config: Config = {
   acquiringConfig: {
     terminalKey: '1721314296114DEMO',
     password: 'bYIS4MnOKw8CgUC_',
+    notificationURL: 'http://185.50.203.149:3000/api/v1/Notification',
     product: {
       amount: 3000,
       description: 'Lorem ipsum dolor...',
-    }}
+    }
+  }
+
 };
 
 const logger = winston.createLogger({
