@@ -52,7 +52,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
 
 //! Perhaps gotta change something in order to protect it
 //! Gotta add the way of resolving when to send OK status
-export const notificationReceive = controllerWrapper(async (req: Request, _res: Response) => {
+export const notificationReceive = controllerWrapper(async (req: Request, res: Response) => {
     logger.debug(req.body);
     const { error, value: valueReq } = validateNotificationRequest(req.body);
     if (error)
@@ -67,4 +67,6 @@ export const notificationReceive = controllerWrapper(async (req: Request, _res: 
     if (transaction.status === 'CONFIRMED') {
         subscribeUser(valueReq.userId);
     }
+    //! GOTTA CHANGE IT IN FUTURE
+    res.send('OK');
 });
