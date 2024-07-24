@@ -38,6 +38,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
         Amount: config.acquiringConfig.product.amount,
         OrderId: uuid4(),
         Description: config.acquiringConfig.product.description,
+        NotificationURL: config.acquiringConfig.notificationURL
     }
 
     const mapiRes = await initMethod(dataObj, config.acquiringConfig.password);
