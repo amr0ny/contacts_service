@@ -35,7 +35,7 @@ const config: Config = {
   acquiringConfig: {
     terminalKey: '1721314296114DEMO',
     password: 'bYIS4MnOKw8CgUC_',
-    notificationURL: 'http://185.50.203.149:3000/api/v1/Notification',
+    notificationURL: 'http://185.50.203.149:3000/api/v2/Notification',
     product: {
       amount: 3000,
       description: 'Lorem ipsum dolor...',

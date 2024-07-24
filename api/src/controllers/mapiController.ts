@@ -40,7 +40,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
         Description: config.acquiringConfig.product.description,
         NotificationURL: config.acquiringConfig.notificationURL
     }
-
+    logger.debug(dataObj);
     const mapiRes = await initMethod(dataObj, config.acquiringConfig.password);
     logger.debug(`${JSON.stringify(mapiRes.data)}`);
     const { error, value } = validateInitResponse(mapiRes.data);
