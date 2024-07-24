@@ -24,3 +24,12 @@ export const appendToken = (dataObj: DataObj, password: string) => {
         Token: token
     };
 };
+
+export const checkToken = (dataObj: DataObj, actualToken: string, password: string): boolean => {
+    const obj = {
+        ...dataObj,
+        Token: {}
+    }
+    const expectedToken = makeToken(obj, password);
+    return !(expectedToken == null || expectedToken !== actualToken);
+}

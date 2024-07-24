@@ -3,7 +3,7 @@ import { handleValidationError } from '../utils/controllerUtils';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import config, { logger } from '../config';
 import { DataObj, mapiEndpoints } from '../schemas';
-import { appendToken } from '../utils/mapiUtils';
+import { appendToken, checkToken } from '../utils/mapiUtils';
 import axios, { AxiosResponse } from 'axios';
 import { v4 as uuid4 } from 'uuid';
 import { validateInitResponse, validateNotificationRequest } from '../validators/mapiValidators';
@@ -50,12 +50,16 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
     res.status(201).json({ payment_url: value.PaymentURL });
 });
 
+//! Perhaps gotta change something in order to protect it
+//! Gotta add the way of resolving when to send OK status
 export const notificationReceive = controllerWrapper(async (req: Request, res: Response) => {
     logger.debug(req.body);
     const { error, value: valueReq } = validateNotificationRequest(req.body);
     if (error)
-        return handleValidationError(res, error, 'Invalid MAPI client request');
+        return;
 
+    if (!checkToken(valueReq, valueReq.Token, config.acquiringConfig.password))
+        return;
     const transaction = await updateTransactionFields(valueReq.OrderId, { payment_id: valueReq.PaymentId, status: valueReq.Status });
     if (!transaction) {
         throw Error('Transaction update failed.')
@@ -64,5 +68,3 @@ export const notificationReceive = controllerWrapper(async (req: Request, res: R
         subscribeUser(valueReq.userId);
     }
 });
-
-// в клиент на init кнопку показываем, а после получения notification, записываем в таблу и оповещаем пользователя.

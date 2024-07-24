@@ -6,26 +6,26 @@ import { controllerWrapper } from '../utils/controllerWrapper';
 import { logger } from '../config';
 
 export const contactsByCityList = controllerWrapper(async (req: Request, res: Response) => {
-    const { cityName } = req.params;
-    
-    const { error: cityError, value: cityValue } = validateCityName({ city: cityName });
-    if (cityError) {
-      return handleValidationError(res, cityError, 'Invalid city name');
-    }
+  const { cityName } = req.params;
 
-    const contacts = await getContactsByCity(cityValue.city);
-    const validatedContacts = contacts
-      .map(contact => {
-        const { error, value } = validateContactPresentable(contact);
-        if (error) {
-            return handleValidationError(res, error, 'Invalid contact data for city');
-        }
-        return value;
-      })
-      .filter(Boolean);
-  
-    res.json(validatedContacts);
-  });
+  const { error: cityError, value: cityValue } = validateCityName({ city: cityName });
+  if (cityError) {
+    return handleValidationError(res, cityError, 'Invalid city name');
+  }
+
+  const contacts = await getContactsByCity(cityValue.city);
+  const validatedContacts = contacts
+    .map(contact => {
+      const { error, value } = validateContactPresentable(contact);
+      if (error) {
+        return handleValidationError(res, error, 'Invalid contact data for city');
+      }
+      return value;
+    })
+    .filter(Boolean);
+
+  res.json(validatedContacts);
+});
 
 export const cityNamesList = controllerWrapper(async (req: Request, res: Response) => {
   const cityNames = await getCityNames();

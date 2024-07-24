@@ -7,23 +7,23 @@ import { logger } from '../config';
 
 
 export const userDetail = controllerWrapper(async (req: Request, res: Response) => {
-    const userId = parseInt(req.params.userId, 10);
-    if (isNaN(userId)) {
-      return handleValidationError(res, new Error('Invalid user ID'), 'Invalid user ID');
-    }
-    logger.debug(userId);
-    const user = await getUser(userId);
-    logger.debug(user);
-    if (!user) {
-      return handleValidationError(res, new Error('User not found'), 'User with the given user_id is not registered', 404);
-    }
-  
-    const { error: userObjError, value: validatedUser } = validateUser(user);
-    if (userObjError) {
-      return handleValidationError(res, userObjError, 'Invalid user data fetched from database table');
-    }
-  
-    res.json(validatedUser);
+  const userId = parseInt(req.params.userId, 10);
+  if (isNaN(userId)) {
+    return handleValidationError(res, new Error('Invalid user ID'), 'Invalid user ID');
+  }
+  logger.debug(userId);
+  const user = await getUser(userId);
+  logger.debug(user);
+  if (!user) {
+    return handleValidationError(res, new Error('User not found'), 'User with the given user_id is not registered', 404);
+  }
+
+  const { error: userObjError, value: validatedUser } = validateUser(user);
+  if (userObjError) {
+    return handleValidationError(res, userObjError, 'Invalid user data fetched from database table');
+  }
+
+  res.json(validatedUser);
 });
 
 export const userCreate = controllerWrapper(async (req: Request, res: Response) => {
