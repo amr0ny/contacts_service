@@ -14,6 +14,8 @@ services:
       - ${POSTGRES_PORT}
     env_file:
       - .env
+    networks:
+      - default
   bot:
     build: ./contact_bot
     env_file:
@@ -23,6 +25,8 @@ services:
       - ./contact_bot/logs:/opt/app/logs
     depends_on:
       - api
+    networks:
+      - default
   api:
     build: ./api
     env_file:
@@ -35,6 +39,8 @@ services:
     depends_on:
       - admin
       - postgres
+    networks:
+      - default
   admin:
     build:
       context: admin
@@ -46,7 +52,8 @@ services:
       - ./admin/static:/var/www/:rw
     expose:
       - "80"
-
+    networks:
+      - default
   nginx:
     image: nginx:alpine
     volumes:
@@ -60,6 +67,8 @@ services:
       - admin
       - api
       - certbot
+    networks:
+      - default
   db_cleaner:
     build: ./cleaner
     env_file:
@@ -70,12 +79,20 @@ services:
     depends_on:
       - admin
       - postgres
+    networks:
+      - default
   certbot:
     image: certbot/certbot
     container_name: certbot
     volumes:
       - ./letsencrypt-certs:/etc/letsencrypt
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $!; done;'"
-
+    networks:
+      - default
 volumes:
   postgres_data:
+
+
+networks:
+  default:
+    driver: bridge
