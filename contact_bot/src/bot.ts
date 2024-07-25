@@ -61,7 +61,7 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     if (user.trial_state > 0) {
       await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
       await next();
-    } else if (expirationDate && expirationDate > now) {
+    } else if (expirationDate > now) {
       await next();
     } else {
       const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${expirationDate <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
