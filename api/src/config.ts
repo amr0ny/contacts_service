@@ -35,7 +35,7 @@ const config: Config = {
   acquiringConfig: {
     terminalKey: '1721314296114DEMO',
     password: 'bYIS4MnOKw8CgUC_',
-    notificationURL: 'http://95.174.95.251:3000/api/v2/Notification',
+    notificationURL: 'https://botrpk.ru/Notification',
     product: {
       amount: 3000,
       description: 'Lorem ipsum dolor...',
