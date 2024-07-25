@@ -63,6 +63,8 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
         await next();
       }
       else {
+        logger.debug(expirationDate.toISOString());
+        logger.debug(now.toISOString());
         await ctx.reply('Your subscription expired', { reply_markup: createMainKeyboard(), });
         return;
       }
