@@ -21,7 +21,7 @@ const NotificationRequest = Joi.object({
   ErrorCode: Joi.string().max(20),
   Message: Joi.string(),
   Details: Joi.string(),
-  RebillId: Joi.number().max(20),
+  RebillId: Joi.number(),
   CardId: Joi.number(),
   Pan: Joi.string(),
   ExpDate: Joi.string(),
