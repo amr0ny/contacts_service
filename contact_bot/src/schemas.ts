@@ -7,7 +7,7 @@ export interface User {
   first_name?: string;
   last_name?: string;
   trial_state: number;
-  subscription_expiration_date?: Date;
+  subscription_expiration_date?: string;
   created_at?: Date;
 }
 

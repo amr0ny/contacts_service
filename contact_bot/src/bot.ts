@@ -56,31 +56,25 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     }
 
     const now = new Date();
-    const expirationDate = user.subscription_expiration_date;
+    const expirationDate = user.subscription_expiration_date
+      ? new Date(user.subscription_expiration_date)
+      : new Date(0); // Если дата не определена, используем прошедшую дату
 
-    if (expirationDate) {
-      if (expirationDate > now) {
-        await next();
-      }
-      else {
-        logger.debug(typeof expirationDate);
-        logger.debug(now.toISOString());
-        await ctx.reply('Your subscription expired', { reply_markup: createMainKeyboard(), });
-        return;
-      }
-    }
-    else if (user.trial_state > 0) {
+    if (user.trial_state > 0) {
       await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
       await next();
-    }
-    else {
-      await ctx.reply('You have no access to this.');
+    } else if (expirationDate > now) {
+      await next();
+    } else {
+      const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${expirationDate <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
+      await ctx.reply(message);
     }
   } catch (error) {
-    logger.error('Error in accessCheckMiddleware:', error);
+    console.error('Error in accessCheckMiddleware:', error);
     await ctx.reply('An error occurred while checking your access. Please try again later.');
   }
 };
+
 
 export const handleStartCommand = async (ctx: BotContext) => {
   try {
