@@ -56,7 +56,7 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     }
 
     const now = new Date();
-    const expirationDate = user.subscription_expiration_date;
+    const expirationDate = user.subscription_expiration_date || new Date(0);
 
     if (expirationDate) {
       if (expirationDate > now) {
