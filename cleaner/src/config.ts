@@ -31,7 +31,7 @@ const config: Config = {
         port: Number(process.env.POSTGRES_PORT || ''),
     },
     cleaner: {
-        cleaningIntervalMinutes: parseInt(process.env.CLEANER_INTERVAL_MINUTES || '60'),
+        cleaningIntervalMinutes: parseInt(process.env.CLEANER_INTERVAL_MINUTES || ''),
         batchSize: parseInt(process.env.CLEANER_BATCH_SIZE || '1000'),
         maxAgeMinutes: parseInt(process.env.CLEANER_MAX_AGE_MINUTES || '10'),
         validStatuses: (process.env.CLEANER_VALID_STATUSES || 'CONFIRMED,REFUNDED').split(','),
