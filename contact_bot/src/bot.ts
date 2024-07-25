@@ -49,12 +49,12 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
 
     const user = await apiService.fetchUser({ userId });
     if (!user) {
-      await ctx.reply('User not found. Please /start the bot again.');
+      await ctx.reply('User not found. Please /start the bot.');
       return;
     }
 
     const now = new Date();
-    const expirationDate = user.subscription_expiration_date ?;
+    const expirationDate = user.subscription_expiration_date;
 
     if (user.trial_state > 0) {
       await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
