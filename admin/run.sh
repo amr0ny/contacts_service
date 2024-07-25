@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 mkdir -p /var/www/static
 mkdir -p /var/www/media
 

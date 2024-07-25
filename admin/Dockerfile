@@ -1,4 +1,12 @@
-FROM python:3.12
+FROM python:3.12-alpine
+
+RUN apk add --no-cache \
+     gcc \
+     musl-dev \
+     python3-dev \
+     linux-headers \
+     pcre-dev
+RUN apk add libffi-dev
 
 WORKDIR /opt/admin
 
@@ -22,4 +30,4 @@ COPY . .
 
 EXPOSE 8000
 
-ENTRYPOINT ["/opt/admin/run.sh"]
+ENTRYPOINT ["/bin/sh", "/opt/admin/run.sh"]
