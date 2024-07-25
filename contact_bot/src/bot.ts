@@ -3,12 +3,15 @@ import { Context, NextFunction, Keyboard, Bot, InlineKeyboard } from 'grammy';
 import { type Other } from 'grammy/out/core/api.d';
 import { type RawApi } from 'grammy/out/core/client.d';
 
-import { type Conversation, } from '@grammyjs/conversations';
+import { type Conversation, type ConversationFlavor } from '@grammyjs/conversations';
 import { ContactPresentable } from './schemas';
 import { apiService } from './requests/apiService';
 
 
-const sendLargeMessage = (bot: Bot, limit: number) => async (chatId: string | number, text: string, reply_markup: Other<RawApi, 'sendMessage', 'chat_id' | 'text'> | undefined) => {
+export type BotContext = Context &
+  ConversationFlavor;
+
+const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (chatId: string | number, text: string, reply_markup: Other<RawApi, 'sendMessage', 'chat_id' | 'text'> | undefined) => {
   const parts = text.match(new RegExp(`(.|[\r\n]){1,${limit}}`, 'g')) || [];
   for (let i = 0; i < parts.length; i++) {
     const isLastPart = i === parts.length - 1;
@@ -17,12 +20,12 @@ const sendLargeMessage = (bot: Bot, limit: number) => async (chatId: string | nu
 };
 
 const TELEGRAM_MESSAGE_LIMIT = 4096;
-export const bot = new Bot(config.token);
+export const bot = new Bot<BotContext>(config.token);
 const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);
 
 const createMainKeyboard = () => new Keyboard().text('📞 Контакты').text('💳 Подписка').row().text('❓ Помощь').resized();
 
-export const userCheckMiddleware = async (ctx: Context, next: NextFunction) => {
+export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.reply('User id is undefined. Please try again later.');
@@ -38,7 +41,7 @@ export const userCheckMiddleware = async (ctx: Context, next: NextFunction) => {
   await next();
 };
 
-export const accessCheckMiddleware = async (ctx: Context, next: NextFunction) => {
+export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.reply('User id is undefined. Please try again later.');
@@ -51,7 +54,8 @@ export const accessCheckMiddleware = async (ctx: Context, next: NextFunction) =>
   const now = new Date();
 
   if (user.trial_state > 0) {
-    await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
+    await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
+
     await next();
   } else if (user.subscription_expiration_date && user.subscription_expiration_date > now) {
     await next();
@@ -61,7 +65,7 @@ export const accessCheckMiddleware = async (ctx: Context, next: NextFunction) =>
   }
 };
 
-export const handleStartCommand = async (ctx: Context) => {
+export const handleStartCommand = async (ctx: BotContext) => {
   try {
     const userId = ctx.from?.id;
     const chatId = ctx.chat?.id;
@@ -86,7 +90,7 @@ export const handleStartCommand = async (ctx: Context) => {
   }
 };
 
-export const handleContactsCommand = async (conversation: Conversation<Context>, ctx: Context) => {
+export const handleContactsCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
   try {
     await ctx.reply('Пожалуйста, введите название города:', {
       reply_markup: new Keyboard().text('⬅️ Назад').resized(),
@@ -145,17 +149,17 @@ export const handleContactsCommand = async (conversation: Conversation<Context>,
   }
 };
 
-export const handleHelpCommand = async (ctx: Context) => {
+export const handleHelpCommand = async (ctx: BotContext) => {
   await ctx.reply('Доступные команды:\n/start - Начать работу с ботом\n/contacts - Поиск контактов по городу\n/subscription - Управление подпиской');
 };
 
-export const handleSubscriptionCommand = async (ctx: Context) => {
+export const handleSubscriptionCommand = async (ctx: BotContext) => {
   await ctx.reply('Для того, чтобы пользоваться возможностями бота без ограничений, оформите подписку.', {
     reply_markup: new InlineKeyboard().text('✅ Оформить подписку', 'process_subscription')
   });
 };
 
-export const handleSubscriptionProcessQuery = async (ctx: Context) => {
+export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
   if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
     await ctx.answerCallbackQuery('Произошла ошибка. Попробуйте еще раз.');
     return;
