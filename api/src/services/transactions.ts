@@ -1,5 +1,5 @@
 import { withDB } from '../db';
-import { Transaction, TransactionAllowedField, transactionAllowedFields, TransactionField } from '../schemas';
+import { Transaction, TransactionAllowedField, transactionAllowedFields, TransactionField, User } from '../schemas';
 
 
 export async function updateTransactionFields(
@@ -23,19 +23,10 @@ export async function updateTransactionFields(
   });
 }
 
-
-export async function getTransactionFields(
-  transactionId: string,
-  fields: TransactionField[]
-): Promise<Partial<Transaction> | null> {
+export async function getTransaction(transactionId: string): Promise<Transaction | null> {
   return withDB(async (client) => {
-    if (fields.length === 0) return null;
-
-    const selectClause = fields.map(field => `"${field}"`).join(', ');
-
-    const query = `SELECT ${selectClause} FROM transactions WHERE id = $1`;
-    const result = await client.query<Partial<Transaction>>(query, [transactionId]);
-
+    const query = `SELECT * FROM transactions WHERE id = $1`;
+    const result = await client.query<Transaction>(query, [transactionId]);
     return result.rows[0] || null;
   });
 }
@@ -56,6 +47,19 @@ export async function createTransaction(
       [orderId, paymentId, userId, amount, status]
     );
 
-    return result.rows[0];
+    return result.rows[0] || null;
+  });
+}
+
+export async function getUserByTransactionId(transactionId: string): Promise<User | null> {
+  return withDB(async (client) => {
+    const query = `
+      SELECT u.* 
+      FROM users u
+      JOIN transactions t ON u.id = t.user_id
+      WHERE t.id = $1
+    `;
+    const result = await client.query<User>(query, [transactionId]);
+    return result.rows[0] || null;
   });
 }

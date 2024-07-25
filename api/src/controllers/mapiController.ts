@@ -7,7 +7,7 @@ import { appendToken, checkToken } from '../utils/mapiUtils';
 import axios, { AxiosResponse } from 'axios';
 import { v4 as uuid4 } from 'uuid';
 import { validateInitResponse, validateNotificationRequest } from '../validators/mapiValidators';
-import { createTransaction, updateTransactionFields } from '../services/transactions';
+import { createTransaction, getUserByTransactionId, updateTransactionFields } from '../services/transactions';
 import { validateUserId } from '../validators/userValidators';
 import { getUser, subscribeUser } from '../services/users';
 
@@ -66,12 +66,18 @@ export const notificationReceive = controllerWrapper(async (req: Request, res: R
         logger.error(`Token is incorrect`);
         return;
     }
+    const user = await getUserByTransactionId(valueReq.id);
+    const userId = user?.user_id;
+    if (!userId) {
+        logger.error('No user available for a given transaction');
+        return;
+    }
     const transaction = await updateTransactionFields(valueReq.OrderId, { payment_id: valueReq.PaymentId, status: valueReq.Status });
     if (!transaction) {
         throw Error('Transaction update failed.')
     }
     if (transaction.status === 'CONFIRMED') {
-        subscribeUser(valueReq.userId);
+        subscribeUser(userId);
     }
     res.send('OK');
 });
