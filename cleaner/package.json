@@ -2,8 +2,7 @@
   "name": "cleaner",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
     "build": "tsc",
