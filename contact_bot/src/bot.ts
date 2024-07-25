@@ -52,7 +52,6 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
 
   const now = new Date();
   logger.debug(JSON.stringify(user));
-  logger.debug(`${user.subscription_expiration_date?.toISOString()} < ${now.toISOString()}`)
   if (user.trial_state > 0) {
     await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
     await next();
