@@ -30,8 +30,6 @@ services:
     restart: unless-stopped
     expose:
       - ${API_PORT}
-    ports:
-      - ${API_PORT}:${API_PORT}
     volumes:
       - ./api/logs:/opt/app/logs
     depends_on:
