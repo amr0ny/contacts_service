@@ -72,8 +72,7 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
       await next();
     }
     else {
-      const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${expirationDate <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
-      await ctx.reply(message);
+      await ctx.reply('You have no access to this.');
     }
   } catch (error) {
     console.error('Error in accessCheckMiddleware:', error);
