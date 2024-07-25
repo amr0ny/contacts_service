@@ -51,7 +51,7 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
   if (!user) return; // User check should have been done in previous middleware
 
   const now = new Date();
-  logger.debug(user);
+  logger.debug(JSON.stringify(user));
   if (user.trial_state > 0) {
     await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
     await next();
