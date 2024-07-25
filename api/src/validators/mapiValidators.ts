@@ -17,7 +17,7 @@ const NotificationRequest = Joi.object({
   OrderId: Joi.string().max(36),
   Success: Joi.boolean(),
   Status: Joi.string().max(20),
-  PaymentId: Joi.string().max(20),
+  PaymentId: Joi.number(),
   ErrorCode: Joi.string().max(20),
   Message: Joi.string(),
   Details: Joi.string(),
