@@ -33,22 +33,27 @@ const createMainKeyboard = () => new Keyboard().text('📞 Контакты').te
 export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   const userId = ctx.from?.id;
   if (!userId) {
-    await ctx.reply('User id is undefined. Please start the conversation with the /start command.');
+    await ctx.reply('User id is undefined. Please try again later.');
     return;
   }
 
   const user = await apiService.fetchUser({ userId });
   if (!user || Object.keys(user).length === 0) {
-    await ctx.reply('User not found or data is incomplete. Please start the conversation with the /start command.');
+    await ctx.reply('Please start the conversation with the /start command.');
     return;
   }
 
-  ctx.config = { user };
   await next();
 };
 
 export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
-  const user = ctx.config?.user;
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('User id is undefined. Please try again later.');
+    return;
+  }
+
+  const user = await apiService.fetchUser({ userId });
   if (!user) return; // User check should have been done in previous middleware
 
   const now = new Date();
@@ -172,7 +177,6 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
       return;
     }
 
-    // Проверка, нужна ли пользователю подписка
     const user = await apiService.fetchUser({ userId });
     if (user && user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
       await ctx.answerCallbackQuery('У вас уже есть активная подписка. Вы можете продлить ее позже.');
@@ -194,7 +198,7 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
 
   } catch (error) {
     logger.error(`An error occurred while handling initializing payment for subscription: ${error}`);
-    
+
     if (error instanceof Error) {
       if (error.message === 'Payment link is unavailable') {
         await ctx.answerCallbackQuery('Извините, в данный момент сервис оплаты недоступен. Пожалуйста, попробуйте позже.');
