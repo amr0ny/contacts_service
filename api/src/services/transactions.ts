@@ -1,5 +1,5 @@
 import { withDB } from '../db';
-import { Transaction, TransactionAllowedField, transactionAllowedFields, TransactionField, User } from '../schemas';
+import { Transaction, TransactionAllowedField, transactionAllowedFields, User } from '../schemas';
 
 
 export async function updateTransactionFields(
