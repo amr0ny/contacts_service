@@ -42,35 +42,19 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
 };
 
 export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
-  try {
-    const userId = ctx.from?.id;
-    if (!userId) {
-      await ctx.reply('User id is undefined. Please try again later.');
-      return;
-    }
-
-    const user = await apiService.fetchUser({ userId });
-    if (!user) {
-      await ctx.reply('User not found. Please /start the bot.');
-      return;
-    }
-
-    const now = new Date();
-    const expirationDate = user.subscription_expiration_date;
-    logger.debug(`${now.toISOString()}, ${expirationDate?.toISOString()}`);
-    if (user.trial_state > 0) {
-      await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
-      await next();
-    } else if (expirationDate && expirationDate > now) {
-      await next();
-    } else {
-      const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${expirationDate <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
-      await ctx.reply(message);
-    }
-  } catch (error) {
-    logger.error('Error in accessCheckMiddleware:', error);
-    await ctx.reply('An error occurred while checking your access. Please try again later.');
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('User id is undefined. Please try again later.');
+    return;
   }
+
+  const user = await apiService.fetchUser({ userId });
+  if (!user) {
+    await ctx.reply('User not found. Please /start the bot.');
+    return;
+  }
+  ctx.reply('Still grinding');
+  await next();
 };
 
 export const handleStartCommand = async (ctx: BotContext) => {

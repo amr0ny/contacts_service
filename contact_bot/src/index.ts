@@ -17,7 +17,6 @@ bot.hears('❓ Помощь', handleHelpCommand);
 bot.callbackQuery('process_subscription', handleSubscriptionProcessQuery);
 
 bot.use(accessCheckMiddleware);
-
 bot.command('contacts', async (ctx) => {
   await ctx.conversation.enter('handleContactsCommand');
 });
