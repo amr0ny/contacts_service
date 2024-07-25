@@ -39,27 +39,35 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
   }
 
   await next();
-};
-export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
-  const userId = ctx.from?.id;
-  if (!userId) {
-    await ctx.reply('User id is undefined. Please try again later.');
-    return;
-  }
+}; export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) {
+      await ctx.reply('User id is undefined. Please try again later.');
+      return;
+    }
 
-  const user = await apiService.fetchUser({ userId });
-  if (!user) return; // User check should have been done in previous middleware
+    const user = await apiService.fetchUser({ userId });
+    if (!user) {
+      await ctx.reply('User not found. Please /start the bot again.');
+      return;
+    }
 
-  const now = new Date();
+    const now = new Date();
+    const expirationDate = user.subscription_expiration_date ?;
 
-  if (user.trial_state > 0) {
-    await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
-    await next();
-  } else if (user.subscription_expiration_date && user.subscription_expiration_date > now) {
-    await next();
-  } else {
-    const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${user.subscription_expiration_date && user.subscription_expiration_date <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
-    await ctx.reply(message);
+    if (user.trial_state > 0) {
+      await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
+      await next();
+    } else if (expirationDate && expirationDate > now) {
+      await next();
+    } else {
+      const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${expirationDate <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
+      await ctx.reply(message);
+    }
+  } catch (error) {
+    logger.error('Error in accessCheckMiddleware:', error);
+    await ctx.reply('An error occurred while checking your access. Please try again later.');
   }
 };
 
