@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: certbot-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./letsencrypt-challenges:/var/www/certbot
+    command: /bin/sh -c "echo 'server { listen 80; server_name botrpk.ru; location /.well-known/acme-challenge/ { root /var/www/certbot; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
