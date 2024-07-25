@@ -66,12 +66,14 @@ export const notificationReceive = controllerWrapper(async (req: Request, res: R
         logger.error(`Token is incorrect`);
         return;
     }
-    const user = await getUserByTransactionId(valueReq.id);
-    const userId = user?.user_id;
-    if (!userId) {
+    const user = await getUserByTransactionId(valueReq.OrderId);
+    logger.debug(user);
+    if (!user) {
         logger.error('No user available for a given transaction');
         return;
     }
+
+    const userId = user?.user_id;
     const transaction = await updateTransactionFields(valueReq.OrderId, { payment_id: valueReq.PaymentId, status: valueReq.Status });
     if (!transaction) {
         throw Error('Transaction update failed.')
