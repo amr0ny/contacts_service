@@ -77,7 +77,7 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
       await ctx.reply('You have no access to this.');
     }
   } catch (error) {
-    console.error('Error in accessCheckMiddleware:', error);
+    logger.error('Error in accessCheckMiddleware:', error);
     await ctx.reply('An error occurred while checking your access. Please try again later.');
   }
 };
