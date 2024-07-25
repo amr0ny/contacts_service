@@ -39,7 +39,9 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
   }
 
   await next();
-}; export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
+};
+
+export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   try {
     const userId = ctx.from?.id;
     if (!userId) {
@@ -55,7 +57,7 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
 
     const now = new Date();
     const expirationDate = user.subscription_expiration_date;
-
+    logger.debug(`${now.toISOString()}, ${expirationDate?.toISOString()}`);
     if (user.trial_state > 0) {
       await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
       await next();
