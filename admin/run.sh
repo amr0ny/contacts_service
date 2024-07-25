@@ -2,8 +2,6 @@
 mkdir -p /var/www/static
 mkdir -p /var/www/media
 
-chown www-data:www-data /var/log
-
 python manage.py collectstatic --no-input
 python manage.py makemigrations
 python manage.py migrate
