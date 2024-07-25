@@ -1,6 +1,6 @@
 FROM python:3.12-alpine
 
-RUN groupadd -r www-data && useradd -r -g www-data www-data
+RUN addgroup -S www-data && adduser -S -G www-data www-data
 RUN apk add --no-cache \
      gcc \
      musl-dev \
