@@ -54,7 +54,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
       - ./admin/static:/var/www/:ro
-      - ./letsencrypt-certs:/etc/letsencryp
+      - ./letsencrypt-certs:/etc/letsencrypt
     ports:
       - "80:80"
       - "443:443"
