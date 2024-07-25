@@ -57,11 +57,15 @@ export const notificationReceive = controllerWrapper(async (req: Request, res: R
     logger.debug(JSON.stringify(req.body));
 
     const { error, value: valueReq } = validateNotificationRequest(req.body);
-    if (error)
+    if (error) {
+        logger.error(`Notification validation failed: ${error}`);
         return;
+    }
 
-    if (!checkToken(valueReq, valueReq.Token, config.acquiringConfig.password))
+    if (!checkToken(valueReq, valueReq.Token, config.acquiringConfig.password)) {
+        logger.error(`Token is incorrect`);
         return;
+    }
     const transaction = await updateTransactionFields(valueReq.OrderId, { payment_id: valueReq.PaymentId, status: valueReq.Status });
     if (!transaction) {
         throw Error('Transaction update failed.')
