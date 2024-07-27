@@ -2,7 +2,6 @@ import config, { logger } from './config';
 import { Context, NextFunction, Keyboard, Bot, InlineKeyboard } from 'grammy';
 import { type Other } from 'grammy/out/core/api.d';
 import { type RawApi } from 'grammy/out/core/client.d';
-
 import { type Conversation, type ConversationFlavor } from '@grammyjs/conversations';
 import { ContactPresentable } from './schemas';
 import { apiService } from './requests/apiService';
@@ -23,7 +22,10 @@ const TELEGRAM_MESSAGE_LIMIT = 4096;
 export const bot = new Bot<BotContext>(config.token);
 const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);
 
-const createMainKeyboard = () => new Keyboard().text('📞 Контакты').text('💳 Подписка').row().text('❓ Помощь').resized();
+const createMainKeyboard = () => new Keyboard()
+  .text('📞 Контакты').text('💳 Подписка')
+  .row().text('❓ Помощь').text('👤 Аккаунт')
+  .resized();
 
 export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   const userId = ctx.from?.id;
@@ -250,5 +252,57 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
     } else {
       await ctx.answerCallbackQuery('🤔 Произошла неизвестная ошибка. Пожалуйста, попробуйте позже.');
     }
+  }
+};
+
+export const handleAccountCommand = async (ctx: BotContext) => {
+  try {
+    const userId = ctx.from?.id;
+
+    if (!userId) {
+      await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
+      return;
+    }
+
+    const user = await apiService.fetchUser({ userId });
+
+    if (!user) {
+      await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
+      return;
+    }
+
+    const now = new Date();
+    const subscriptionExpirationDate = user.subscription_expiration_date
+      ? new Date(user.subscription_expiration_date)
+      : null;
+
+    let subscriptionStatus = '';
+    if (subscriptionExpirationDate && subscriptionExpirationDate > now) {
+      subscriptionStatus = 'Активна';
+    } else {
+      subscriptionStatus = 'Не активна';
+    }
+
+    const formatDate = (date: Date): string => {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
+    };
+
+    const expirationMessage = subscriptionExpirationDate
+      ? `Заканчивается: ${formatDate(subscriptionExpirationDate)}`
+      : 'Дата окончания: Не указана';
+
+    const message = `
+      📊 <b>Состояние подписки:</b> ${subscriptionStatus}
+      📅 <b>${expirationMessage}</b>
+      🔄 <b>Доступные запросы:</b> ${user.trial_state}
+    `;
+
+    await ctx.reply(message, { parse_mode: 'HTML' });
+  } catch (error) {
+    logger.error('Error in handleAccountCommand:', error);
+    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
   }
 };
