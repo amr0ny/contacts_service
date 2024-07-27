@@ -3,7 +3,6 @@ import { validateUser, validateUpdateUser } from '../validators/userValidators';
 import { createUser, getUser, updateUserFields } from '../services/users';
 import { handleValidationError } from '../utils/controllerUtils';
 import { controllerWrapper } from '../utils/controllerWrapper';
-import { logger } from '../config';
 
 
 export const userDetail = controllerWrapper(async (req: Request, res: Response) => {
@@ -11,9 +10,7 @@ export const userDetail = controllerWrapper(async (req: Request, res: Response) 
   if (isNaN(userId)) {
     return handleValidationError(res, new Error('Invalid user ID'), 'Invalid user ID');
   }
-  logger.debug(userId);
   const user = await getUser(userId);
-  logger.debug(user);
   if (!user) {
     return handleValidationError(res, new Error('User not found'), 'User with the given user_id is not registered', 404);
   }
@@ -27,13 +24,12 @@ export const userDetail = controllerWrapper(async (req: Request, res: Response) 
 });
 
 export const userCreate = controllerWrapper(async (req: Request, res: Response) => {
-  logger.debug(req.body);
   const { error: userError, value: validatedUser } = validateUser(req.body);
   if (userError) {
     return handleValidationError(res, userError, 'Invalid user data');
   }
 
-  const createdUser = await createUser(validatedUser.user_id, validatedUser.username, validatedUser.first_name, validatedUser.last_name);
+  const createdUser = await createUser(validatedUser.user_id, validatedUser.username, validatedUser.first_name, validatedUser.last_name, validatedUser.trial_state);
   res.status(201).json(createdUser);
 });
 

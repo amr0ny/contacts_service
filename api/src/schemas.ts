@@ -10,7 +10,7 @@ export interface User {
   created_at?: Date,
 }
 
-export type UserAllowedField = Exclude<keyof User, 'id' | 'user_id' | 'created_at' | 'first_name' | 'last_name'>;
+export type UserAllowedField = Exclude<keyof User, 'username' | 'id' | 'user_id' | 'created_at' | 'first_name' | 'last_name'>;
 
 export const userAllowedFields: UserAllowedField[] = ['trial_state', 'subscription_expiration_date'];
 

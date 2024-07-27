@@ -9,7 +9,7 @@ import { v4 as uuid4 } from 'uuid';
 import { validateInitResponse, validateNotificationRequest } from '../validators/mapiValidators';
 import { createTransaction, getUserByTransactionId, updateTransactionFields } from '../services/transactions';
 import { validateUserId } from '../validators/userValidators';
-import { getUser, subscribeUser } from '../services/users';
+import { getUser, updateUserFields } from '../services/users';
 
 
 type MAPIMethod = (dataObj: DataObj, password: string) => Promise<AxiosResponse<any, any>>;
@@ -24,7 +24,6 @@ const initMethod = MAPIMethod('https://securepay.tinkoff.ru/v2/Init');
 
 
 export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Response) => {
-    logger.debug(`mapiPaymentInit: ${JSON.stringify(req.body)}`);
     const { error: errorReq, value: valueReq } = validateUserId(req.body);
     if (errorReq) {
         return handleValidationError(res, errorReq, 'Invalid user request');
@@ -40,9 +39,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
         Description: config.acquiringConfig.product.description,
         NotificationURL: config.acquiringConfig.notificationURL
     }
-    logger.debug(dataObj);
     const mapiRes = await initMethod(dataObj, config.acquiringConfig.password);
-    logger.debug(`${JSON.stringify(mapiRes.data)}`);
     const { error, value } = validateInitResponse(mapiRes.data);
     if (error)
         return handleValidationError(res, error, 'An error occured while requesting MAPI.');
@@ -51,11 +48,7 @@ export const mapiPaymentInit = controllerWrapper(async (req: Request, res: Respo
     res.status(201).json({ payment_url: value.PaymentURL });
 });
 
-//! Perhaps gotta change something in order to protect it
-//! Gotta add the way of resolving when to send OK status
 export const notificationReceive = controllerWrapper(async (req: Request, res: Response) => {
-    logger.debug(JSON.stringify(req.body));
-
     const { error, value: valueReq } = validateNotificationRequest(req.body);
     if (error) {
         logger.error(`Notification validation failed: ${error}`);
@@ -63,23 +56,25 @@ export const notificationReceive = controllerWrapper(async (req: Request, res: R
     }
 
     if (!checkToken(valueReq, valueReq.Token, config.acquiringConfig.password)) {
-        logger.error(`Token is incorrect`);
+        logger.warn(`Unauthorized access attempt from IP: ${req.ip}`);
+        res.status(403).json({ error: 'Unauthorized' });
         return;
     }
     const user = await getUserByTransactionId(valueReq.OrderId);
-    logger.debug(user);
     if (!user) {
         logger.error('No user available for a given transaction');
         return;
     }
 
     const userId = user?.user_id;
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + config.expiresIn);
     const transaction = await updateTransactionFields(valueReq.OrderId, { payment_id: valueReq.PaymentId, status: valueReq.Status });
     if (!transaction) {
         throw Error('Transaction update failed.')
     }
     if (transaction.status === 'CONFIRMED') {
-        subscribeUser(userId);
+        updateUserFields(userId, { trial_state: config.userTrialSubscriptionState, subscription_expiration_date: expDate })
     }
     res.send('OK');
 });

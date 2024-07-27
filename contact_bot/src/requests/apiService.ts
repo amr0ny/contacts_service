@@ -30,7 +30,6 @@ class ApiService {
     try {
       const url = endpoints.userDetail(userId);
       const response = await this.apiClient.get(url);
-      logger.debug(`${response.data}, ${response.status}`);
       return this.handleResponse(response);
     } catch (error) {
       if (isAxiosError(error)) {
@@ -66,7 +65,6 @@ class ApiService {
   public async fetchContactsByCity(req: ContactsByCityListRequest): Promise<ContactPresentable[]> {
     try {
       const url = endpoints.contactsByCityList(req.cityName);
-      logger.debug(url);
       const response = await this.apiClient.get(url);
       return this.handleResponse(response);
     } catch (error) {
@@ -77,8 +75,7 @@ class ApiService {
   public async initUserPayment({ userId }: InitUserPaymentRequest): Promise<InitTransactionResponse> {
     try {
       const url = endpoints.initUserPayment();
-      logger.debug(url);
-      const response = await this.apiClient.post(url, {user_id: userId});
+      const response = await this.apiClient.post(url, { user_id: userId });
       return this.handleResponse(response);
     } catch (error) {
       return this.handleError(error);

@@ -3,7 +3,6 @@ import { getCityNames, getContactsByCity } from '../services/contacts';
 import { validateCityName, validateContactPresentable } from '../validators/contactValidators';
 import { handleValidationError } from '../utils/controllerUtils';
 import { controllerWrapper } from '../utils/controllerWrapper';
-import { logger } from '../config';
 
 export const contactsByCityList = controllerWrapper(async (req: Request, res: Response) => {
   const { cityName } = req.params;
@@ -29,7 +28,6 @@ export const contactsByCityList = controllerWrapper(async (req: Request, res: Re
 
 export const cityNamesList = controllerWrapper(async (_req: Request, res: Response) => {
   const cityNames = await getCityNames();
-  logger.debug(cityNames);
   const validatedCities = cityNames
     .map(city => {
       const { error, value } = validateCityName(city);

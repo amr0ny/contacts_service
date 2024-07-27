@@ -18,7 +18,7 @@ export interface ContactPresentable {
   phone_1?: string;
 }
 
-export const API_BASE_URL = config.api_base_url;
+export const API_BASE_URL = config.apiBaseUrl;
 
 export const endpoints = {
   userDetail: (userId: number) => `api/v1/users/${userId}`,
@@ -39,6 +39,7 @@ export interface InitUserPaymentRequest {
 export interface CreateUserRequest {
   user_id: number;
   username: string;
+  trial_state: number;
   first_name?: string;
   last_name?: string;
 }

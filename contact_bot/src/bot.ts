@@ -28,13 +28,13 @@ const createMainKeyboard = () => new Keyboard().text('📞 Контакты').te
 export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   const userId = ctx.from?.id;
   if (!userId) {
-    await ctx.reply('User id is undefined. Please try again later.');
+    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
     return;
   }
 
   const user = await apiService.fetchUser({ userId });
   if (!user || Object.keys(user).length === 0) {
-    await ctx.reply('Please start the conversation with the /start command.');
+    await ctx.reply('Для того, чтобы начать работать с ботом введите /start');
     return;
   }
 
@@ -45,33 +45,47 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
   try {
     const userId = ctx.from?.id;
     if (!userId) {
-      await ctx.reply('User id is undefined. Please try again later.');
+      await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
       return;
     }
 
     const user = await apiService.fetchUser({ userId });
     if (!user) {
-      await ctx.reply('User not found. Please start the bot again.');
+      await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
       return;
     }
 
     const now = new Date();
     const expirationDate = user.subscription_expiration_date
       ? new Date(user.subscription_expiration_date)
-      : new Date(0); // Если дата не определена, используем прошедшую дату
+      : undefined; // Если дата не определена, используем прошедшую дату
 
     if (user.trial_state > 0) {
-      await apiService.updateUser(user.user_id, { trial_state: user.trial_state - 1 });
-      await next();
-    } else if (expirationDate > now) {
-      await next();
+      if (expirationDate) {
+        if (expirationDate > now) {
+          await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
+          await next();
+        } else {
+          ctx.reply('Срок действия вашей пробной подписки истек. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
+        }
+      } else {
+        await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
+        await next()
+      }
     } else {
-      const message = `Your access has expired. ${user.trial_state === 0 ? 'You have used all your trial attempts. ' : ''}${expirationDate <= now ? 'Your subscription has expired. ' : ''}Please use the /subscription command to renew your access.`;
-      await ctx.reply(message);
+      if (expirationDate) {
+        if (expirationDate > now) {
+          await ctx.reply('У вас закончились запросы в рамках подписки. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
+          return;
+        }
+      }
+      else {
+        await ctx.reply('У вас закончились пробные запросы. Приобретите подписку, чтобы продолжить пользоваться сервисом.')
+      }
     }
   } catch (error) {
-    console.error('Error in accessCheckMiddleware:', error);
-    await ctx.reply('An error occurred while checking your access. Please try again later.');
+    logger.error('Error in accessCheckMiddleware:', error);
+    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
   }
 };
 
@@ -89,15 +103,28 @@ export const handleStartCommand = async (ctx: BotContext) => {
         username: ctx.from?.username ?? '',
         first_name: ctx.from?.first_name ?? undefined,
         last_name: ctx.from?.last_name ?? undefined,
+        trial_state: config.userTrialState
       });
       if (!user) throw new Error('Failed to create user');
-      await ctx.reply(`Welcome! You have ${user.trial_state} trial attempts`, { reply_markup: createMainKeyboard() });
+      await ctx.reply(`Добро пожаловать в бот для поиска РПК.\nСписок доступных комманд: \n
+        /search – Получить список рекламно-производственных компаний по указанному городу
+        /account – Посмотреть информацию о вашей подписке
+        /subscription – Оформить платную подписку на сервис
+
+        Вам доступно пробных запросов: ${user.trial_state}
+        `, { reply_markup: createMainKeyboard() });
     } else {
-      await ctx.reply(`Welcome back ${user.first_name}! You have ${user.trial_state} attempts left`, { reply_markup: createMainKeyboard() });
+      await ctx.reply(`Добро пожаловать назад!\nСписок доступных комманд: \n
+        /search – Получить список рекламно-производственных компаний по указанному городу
+        /account – Посмотреть информацию о вашей подписке
+        /subscription – Оформить платную подписку на сервис
+
+        ${user.subscription_expiration_date ? `Вам доступно запросов: ${user.trial_state}` : ''}
+        `, { reply_markup: createMainKeyboard() });
     }
   } catch (e) {
     logger.error(`An error occurred while starting bot communication: ${e}`);
-    await ctx.reply('Sorry, an error occurred. Please try again later or contact support.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
+    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
   }
 };
 
@@ -110,7 +137,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
     const { message } = await conversation.wait();
 
     if (!message?.text) {
-      await ctx.reply('Извините, я не смог распознать название города. Попробуйте еще раз /contacts.', {
+      await ctx.reply('Извините, я не смог распознать название города. Попробуйте еще раз /search.', {
         reply_markup: createMainKeyboard(),
       });
       return;
@@ -126,7 +153,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
     }
 
     if (!userResponse) {
-      await ctx.reply('Название города не должно быть пустым. Попробуйте еще раз /contacts.', {
+      await ctx.reply('Название города не должно быть пустым. Попробуйте еще раз /search.', {
         reply_markup: createMainKeyboard(),
       });
 
@@ -136,7 +163,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
     const contacts = await apiService.fetchContactsByCity({ cityName: userResponse });
 
     if (contacts.length === 0) {
-      await ctx.reply(`Извините, контакты для города "${userResponse}" не найдены.`, {
+      await ctx.reply(`Извините, компании для города "${userResponse}" не найдены.`, {
         reply_markup: createMainKeyboard(),
       });
       return;
@@ -149,30 +176,36 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       throw new Error('Chat ID not found');
     }
 
-    await sendMessage(chatId, `Контакты для города ${userResponse}:\n\n${contactMessage}`, {
+    await sendMessage(chatId, `Список контактов для города ${userResponse}:\n\n${contactMessage}`, {
       reply_markup: createMainKeyboard(),
     });
   } catch (error) {
     logger.error(`An error occurred while handling the contacts command: ${error}`);
-    await ctx.reply('Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.', {
+    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.', {
       reply_markup: createMainKeyboard(),
     });
   }
 };
 
 export const handleHelpCommand = async (ctx: BotContext) => {
-  await ctx.reply('Доступные команды:\n/start - Начать работу с ботом\n/contacts - Поиск контактов по городу\n/subscription - Управление подпиской');
+  await ctx.reply(`Доступные команды:\n
+    /start - Начать работу с ботом
+    /search - Поиск контактов по городу\n/subscription - Управление подпиской
+    /account – Посмотреть информацию о вашей подписке
+    `);
 };
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
-  await ctx.reply('Для того, чтобы пользоваться возможностями бота без ограничений, оформите подписку.', {
-    reply_markup: new InlineKeyboard().text('✅ Оформить подписку', 'process_subscription')
+  await ctx.reply(`Бот предоставляет бесплатный лимит из ${config.userTrialState} запросов.
+    Для того, чтобы пользоваться ботом без ограничений, оформите подписку.
+  `, {
+    reply_markup: new InlineKeyboard().text(`✅ Купить неограниченный доступ за ${config.paymentAmount} руб`, 'process_subscription')
   });
 };
 
 export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
   if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
-    await ctx.answerCallbackQuery('Произошла ошибка. Попробуйте еще раз.');
+    await ctx.answerCallbackQuery('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
     return;
   }
 
@@ -185,7 +218,7 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
 
     const user = await apiService.fetchUser({ userId });
     if (user && user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
-      await ctx.answerCallbackQuery('У вас уже есть активная подписка. Вы можете продлить ее позже.');
+      await ctx.answerCallbackQuery('У вас уже есть активная подписка. ');
       return;
     }
 
@@ -195,7 +228,7 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
     }
 
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText('Подписка 30 дней за 14 рублей', {
+    await ctx.editMessageText('*Оплата банковской картой РФ*', {
       reply_markup: new InlineKeyboard().url('💸 Перейти к оплате', res.payment_url)
     });
 

@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import winston from 'winston';
 import { PoolConfig } from 'pg';
+import DailyRotateFile from 'winston-daily-rotate-file';
 
 dotenv.config({ path: '../.env' });
 
@@ -38,14 +39,30 @@ const config: Config = {
     },
 };
 
+const errorRotateFile = new DailyRotateFile({
+    filename: './logs/error-%DATE%.log',
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: true,
+    maxSize: '5m',
+    maxFiles: '14d',
+    level: 'error',
+});
+
+const combinedRotateFile = new DailyRotateFile({
+    filename: './logs/combined-%DATE%.log',
+    datePattern: 'YYYY-MM-DD',
+    zippedArchive: true,
+    maxSize: '5m',
+    maxFiles: '14d',
+});
 
 const logger = winston.createLogger({
     level: config.logLevel,
     format: winston.format.json(),
     defaultMeta: { service: 'user-service' },
     transports: [
-        new winston.transports.File({ filename: './logs/error.log', level: 'error' }),
-        new winston.transports.File({ filename: './logs/combined.log' }),
+        errorRotateFile,
+        combinedRotateFile,
     ],
 });
 
@@ -56,6 +73,7 @@ if (config.nodeEnv !== 'production') {
         }),
     );
 }
+
 
 export { logger };
 export default config;

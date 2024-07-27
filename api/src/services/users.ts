@@ -14,11 +14,12 @@ export async function createUser(
   username: string | undefined,
   firstName: string | undefined,
   lastName: string | undefined,
+  trialState: number | undefined
 ): Promise<User> {
   return withDB<User>(async (client) => {
     const result = await client.query<User>(
-      'INSERT INTO users (user_id, username, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING *',
-      [userId, username, firstName, lastName],
+      'INSERT INTO users (user_id, username, first_name, last_name, trial_state) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [userId, username, firstName, lastName, trialState],
     );
     return result.rows[0];
   });
@@ -40,14 +41,5 @@ export async function updateUserFields(
     const query = `UPDATE users SET ${setClause} WHERE user_id = $1 RETURNING *`;
     const result = await client.query<User>(query, [userId, ...values]);
     return result.rows[0] || null;
-  });
-}
-
-export async function subscribeUser(userId: number) {
-  return withDB(async (client) => {
-    await client.query(
-      "UPDATE users SET subscription_expiration_date = CURRENT_TIMESTAMP + INTERVAL '30 days' WHERE user_id = $1",
-      [userId],
-    );
   });
 }

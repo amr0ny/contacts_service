@@ -12,7 +12,7 @@ export const userSchema = Joi.object({
     username: Joi.string().required(),
     first_name: Joi.string().allow(null),
     last_name: Joi.string().allow(null),
-    trial_state: Joi.number().integer(),
+    trial_state: Joi.number().integer().required(),
     subscription_expiration_date: Joi.date().allow(null),
     created_at: Joi.date(),
 });
