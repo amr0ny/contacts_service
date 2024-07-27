@@ -106,38 +106,42 @@ export const handleStartCommand = async (ctx: BotContext) => {
         trial_state: config.userTrialState
       });
       if (!user) throw new Error('Failed to create user');
-      await ctx.reply(`Добро пожаловать в бот для поиска РПК.\nСписок доступных комманд: \n
-        /search – Получить список рекламно-производственных компаний по указанному городу
-        /account – Посмотреть информацию о вашей подписке
-        /subscription – Оформить платную подписку на сервис
+      await ctx.reply(`🎉 Добро пожаловать в бот для поиска РПК!
 
-        Вам доступно пробных запросов: ${user.trial_state}
-        `, { reply_markup: createMainKeyboard() });
+🔍 Доступные команды:
+/search – Поиск РПК по городу
+/account – Информация о подписке
+/subscription – Оформление подписки
+
+🎁 У вас ${user.trial_state} пробных запросов.
+Удачного поиска!`, { reply_markup: createMainKeyboard() });
     } else {
-      await ctx.reply(`Добро пожаловать назад!\nСписок доступных комманд: \n
-        /search – Получить список рекламно-производственных компаний по указанному городу
-        /account – Посмотреть информацию о вашей подписке
-        /subscription – Оформить платную подписку на сервис
+      await ctx.reply(`👋 С возвращением!
 
-        ${user.subscription_expiration_date ? `Вам доступно запросов: ${user.trial_state}` : ''}
-        `, { reply_markup: createMainKeyboard() });
+🔍 Доступные команды:
+/search – Поиск РПК по городу
+/account – Информация о подписке
+/subscription – Оформление подписки
+
+${user.subscription_expiration_date ? `✅ Доступно запросов: ${user.trial_state}` : ''}
+Удачного поиска!`, { reply_markup: createMainKeyboard() });
     }
   } catch (e) {
     logger.error(`An error occurred while starting bot communication: ${e}`);
-    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
+    await ctx.reply('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
   }
 };
 
 export const handleContactsCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
   try {
-    await ctx.reply('Пожалуйста, введите название города:', {
+    await ctx.reply('🏙️ Введите название города:', {
       reply_markup: new Keyboard().text('⬅️ Назад').resized(),
     });
 
     const { message } = await conversation.wait();
 
     if (!message?.text) {
-      await ctx.reply('Извините, я не смог распознать название города. Попробуйте еще раз /search.', {
+      await ctx.reply('😕 Извините, не удалось распознать название города. Попробуйте еще раз с помощью /search.', {
         reply_markup: createMainKeyboard(),
       });
       return;
@@ -146,79 +150,81 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
     const userResponse = message.text.trim();
 
     if (userResponse === '⬅️ Назад') {
-      await ctx.reply('Вы вернулись назад.', {
+      await ctx.reply('👌 Вы вернулись в главное меню.', {
         reply_markup: createMainKeyboard(),
       });
       return;
     }
 
     if (!userResponse) {
-      await ctx.reply('Название города не должно быть пустым. Попробуйте еще раз /search.', {
+      await ctx.reply('❗ Название города не может быть пустым. Попробуйте еще раз с помощью /search.', {
         reply_markup: createMainKeyboard(),
       });
-
       return;
     }
 
     const contacts = await apiService.fetchContactsByCity({ cityName: userResponse });
 
     if (contacts.length === 0) {
-      await ctx.reply(`Извините, компании для города "${userResponse}" не найдены.`, {
+      await ctx.reply(`😔 К сожалению, РПК для города "${userResponse}" не найдены.`, {
         reply_markup: createMainKeyboard(),
       });
       return;
     }
 
-    const contactMessage = contacts.map((contact: ContactPresentable) => `${contact.name} – ${contact.description} – ${contact.city} – ${contact.phone_1}`).join('\n');
+    const contactMessage = contacts.map((contact: ContactPresentable) => `🏢 ${contact.name}\n📝 ${contact.description}\n🏙️ ${contact.city}\n📞 ${contact.phone_1}`).join('\n\n');
 
     const chatId = ctx.chat?.id;
     if (!chatId) {
       throw new Error('Chat ID not found');
     }
 
-    await sendMessage(chatId, `Список контактов для города ${userResponse}:\n\n${contactMessage}`, {
+    await sendMessage(chatId, `📋 Список РПК в городе ${userResponse}:\n\n${contactMessage}`, {
       reply_markup: createMainKeyboard(),
     });
   } catch (error) {
     logger.error(`An error occurred while handling the contacts command: ${error}`);
-    await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.', {
+    await ctx.reply('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.', {
       reply_markup: createMainKeyboard(),
     });
   }
 };
 
 export const handleHelpCommand = async (ctx: BotContext) => {
-  await ctx.reply(`Доступные команды:\n
-    /start - Начать работу с ботом
-    /search - Поиск контактов по городу\n/subscription - Управление подпиской
-    /account – Посмотреть информацию о вашей подписке
-    `);
+  await ctx.reply(`ℹ️ Доступные команды:
+
+🚀 /start - Начать работу с ботом
+🔍 /search - Поиск РПК по городу
+💳 /subscription - Управление подпиской
+👤 /account - Информация о подписке
+
+Если у вас остались вопросы, обратитесь в поддержку.`);
 };
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
-  await ctx.reply(`Бот предоставляет бесплатный лимит из ${config.userTrialState} запросов.
-    Для того, чтобы пользоваться ботом без ограничений, оформите подписку.
-  `, {
-    reply_markup: new InlineKeyboard().text(`✅ Купить неограниченный доступ за ${config.paymentAmount} руб`, 'process_subscription')
+  await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных запросов.
+
+💼 Для неограниченного доступа оформите подписку:`, {
+    reply_markup: new InlineKeyboard().text(`✅ Купить за ${parseFloat((config.paymentAmount / 100).toString()).toString()} ₽`, 'process_subscription')
   });
 };
 
 export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
   if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
-    await ctx.answerCallbackQuery('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
+    await ctx.answerCallbackQuery('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
     return;
   }
 
   try {
     const userId = ctx.from?.id;
     if (!userId) {
-      await ctx.answerCallbackQuery('Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
+      await ctx.answerCallbackQuery('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
       return;
     }
 
     const user = await apiService.fetchUser({ userId });
     if (user && user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
-      await ctx.answerCallbackQuery('У вас уже есть активная подписка. ');
+      await ctx.answerCallbackQuery('✅ У вас уже есть активная подписка.');
       return;
     }
 
@@ -228,29 +234,21 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
     }
 
     await ctx.answerCallbackQuery();
-    await ctx.editMessageText('*Оплата банковской картой РФ*', {
+    await ctx.editMessageText('💳 Оплата банковской картой РФ', {
       reply_markup: new InlineKeyboard().url('💸 Перейти к оплате', res.payment_url)
     });
-
-    // Обновление данных пользователя (например, установка флага "ожидает оплаты")
-    // await apiService.updateUser(userId, { payment_pending: true });
 
   } catch (error) {
     logger.error(`An error occurred while handling initializing payment for subscription: ${error}`);
 
     if (error instanceof Error) {
       if (error.message === 'Payment link is unavailable') {
-        await ctx.answerCallbackQuery('Извините, в данный момент сервис оплаты недоступен. Пожалуйста, попробуйте позже.');
+        await ctx.answerCallbackQuery('😔 Извините, сервис оплаты временно недоступен. Пожалуйста, попробуйте позже.');
       } else {
-        await ctx.answerCallbackQuery('Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.');
-        /*
-        await ctx.editMessageText('Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.', {
-          reply_markup: createMainKeyboard()
-        });
-        */
+        await ctx.answerCallbackQuery('❗ Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже.');
       }
     } else {
-      await ctx.answerCallbackQuery('Произошла неизвестная ошибка. Пожалуйста, попробуйте позже.');
+      await ctx.answerCallbackQuery('🤔 Произошла неизвестная ошибка. Пожалуйста, попробуйте позже.');
     }
   }
 };

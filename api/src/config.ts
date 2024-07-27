@@ -57,8 +57,8 @@ const config: Config = {
     password: 'bYIS4MnOKw8CgUC_',
     notificationURL: 'https://botrpk.ru/Notification',
     product: {
-      amount: 3000,
-      description: 'Lorem ipsum dolor...',
+      amount: parseInt(process.env.PAYMENT_AMOUT || '15000', 10),
+      description: 'Доступ к базе РПК России',
     }
   },
   corsOptions: {
