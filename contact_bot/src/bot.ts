@@ -66,14 +66,14 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     if (user.trial_state > 0) {
       if (expirationDate) {
         if (expirationDate > now) {
-          await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
           await next();
+          await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
         } else {
           ctx.reply('Срок действия вашей пробной подписки истек. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
         }
       } else {
-        await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
         await next()
+        await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
       }
     } else {
       if (expirationDate) {
@@ -206,7 +206,7 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 };
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
-  await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных запросов.
+  await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 
 💼 Для неограниченного доступа оформите подписку:`, {
     reply_markup: new InlineKeyboard().text(`✅ Купить за ${parseFloat((config.paymentAmount / 100).toString()).toString()} ₽`, 'process_subscription')
@@ -296,7 +296,7 @@ export const handleAccountCommand = async (ctx: BotContext) => {
       ? `📅  Заканчивается: ${formatDate(subscriptionExpirationDate)}`
       : '';
 
-    const message = `📊 <b>Состояние подписки:</b> ${subscriptionStatus}<br/><b>${expirationMessage}</b><br/>🔄 <b>Доступные запросы:</b> ${user.trial_state}`;
+    const message = `📊 *Состояние подписки:* ${subscriptionStatus}\n*${expirationMessage}*\n🔄 *Доступные запросы:* ${user.trial_state}`;
 
     await ctx.reply(message, { parse_mode: 'HTML' });
   } catch (error) {
