@@ -57,7 +57,7 @@ const config: Config = {
     password: process.env.ACQUIRING_PASSWORD || '',
     notificationURL: 'https://botrpk.ru/Notification',
     product: {
-      amount: parseInt(process.env.PAYMENT_AMOUT || '15000', 10),
+      amount: parseInt(process.env.PAYMENT_AMOUNT || '15000', 10),
       description: process.env.PRODUCT_DESCRIPTION || '',
     }
   },
