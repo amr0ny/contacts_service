@@ -5,6 +5,7 @@ import { type RawApi } from 'grammy/out/core/client.d';
 import { type Conversation, type ConversationFlavor } from '@grammyjs/conversations';
 import { ContactPresentable } from './schemas';
 import { apiService } from './requests/apiService';
+import { getRequestWord } from './utils/wording';
 
 
 export type BotContext = Context &
@@ -115,10 +116,11 @@ export const handleStartCommand = async (ctx: BotContext) => {
 /account – Информация о подписке
 /subscription – Оформление подписки
 
-🎁 У вас ${user.trial_state} пробных запросов.
+🎁 У вас ${user.trial_state} ${getRequestWord(user.trial_state)}.
 Удачного поиска!`, { reply_markup: createMainKeyboard() });
     } else {
       await ctx.reply(`👋 С возвращением!
+
 
 🔍 Доступные команды:
 /search – Поиск РПК по городу
@@ -291,14 +293,10 @@ export const handleAccountCommand = async (ctx: BotContext) => {
     };
 
     const expirationMessage = subscriptionExpirationDate
-      ? `Заканчивается: ${formatDate(subscriptionExpirationDate)}`
-      : 'Дата окончания: Не указана';
+      ? `📅  Заканчивается: ${formatDate(subscriptionExpirationDate)}`
+      : '';
 
-    const message = `
-      📊 <b>Состояние подписки:</b> ${subscriptionStatus}
-      📅 <b>${expirationMessage}</b>
-      🔄 <b>Доступные запросы:</b> ${user.trial_state}
-    `;
+    const message = `📊 <b>Состояние подписки:</b> ${subscriptionStatus}<br/><b>${expirationMessage}</b><br/>🔄 <b>Доступные запросы:</b> ${user.trial_state}`;
 
     await ctx.reply(message, { parse_mode: 'HTML' });
   } catch (error) {
