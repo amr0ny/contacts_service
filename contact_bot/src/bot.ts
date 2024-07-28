@@ -24,7 +24,7 @@ const sendLargeMessageContacts = (bot: Bot<BotContext>, limit: number) => async 
       return null;
     }
     if (typeof value === 'number') {
-      return value.toString().replace(/\.0$/, '');
+      return parseFloat(value.toString()).toString()
     }
     return String(value);
   };
