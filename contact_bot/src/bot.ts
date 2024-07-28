@@ -298,7 +298,7 @@ export const handleAccountCommand = async (ctx: BotContext) => {
 
     const message = `📊 *Состояние подписки:* ${subscriptionStatus}\n*${expirationMessage}*\n🔄 *Доступные запросы:* ${user.trial_state}`;
 
-    await ctx.reply(message, { parse_mode: 'HTML' });
+    await ctx.reply(message);
   } catch (error) {
     logger.error('Error in handleAccountCommand:', error);
     await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
