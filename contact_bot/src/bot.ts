@@ -11,7 +11,7 @@ import { getRequestWord } from './utils/wording';
 export type BotContext = Context &
   ConversationFlavor;
 
-const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (
+const sendLargeMessageContacts = (bot: Bot<BotContext>, limit: number) => async (
   chatId: string | number,
   contacts: ContactPresentable[],
   cityName: string,
@@ -19,9 +19,9 @@ const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (
 ) => {
   let currentMessage = `📋 Список РПК в городе ${cityName}:\n\n`;
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: any): string | null => {
     if (value === null || value === undefined || String(value).toLowerCase() === 'nan') {
-      return '-';
+      return null;
     }
     if (typeof value === 'number') {
       return value.toString().replace(/\.0$/, '');
@@ -31,7 +31,14 @@ const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (
 
   for (let i = 0; i < contacts.length; i++) {
     const contact = contacts[i];
-    const contactInfo = `🏢 ${formatValue(contact.name)} – ${formatValue(contact.description)} – ${formatValue(contact.city)} – ${formatValue(contact.phone_1)}\n\n`;
+    const contactParts = [
+      formatValue(contact.name) ? `${formatValue(contact.name)}` : null,
+      formatValue(contact.description) ? `${formatValue(contact.description)}` : null,
+      formatValue(contact.city) ? `${formatValue(contact.city)}` : null,
+      formatValue(contact.phone_1) ? `${formatValue(contact.phone_1)}` : null
+    ].filter(Boolean);
+
+    const contactInfo = contactParts.join(' – ') + '\n\n';
 
     if (currentMessage.length + contactInfo.length > limit) {
       await bot.api.sendMessage(chatId, currentMessage.trim(), {});
@@ -207,7 +214,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       throw new Error('Chat ID not found');
     }
 
-    const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);  // 4096 - максимальная длина сообщения в Telegram
+    const sendMessage = sendLargeMessageContacts(bot, TELEGRAM_MESSAGE_LIMIT);  // 4096 - максимальная длина сообщения в Telegram
 
     await sendMessage(chatId, contacts, userResponse, {
       reply_markup: createMainKeyboard(),
