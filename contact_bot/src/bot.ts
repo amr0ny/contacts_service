@@ -23,9 +23,6 @@ const sendLargeMessageContacts = (bot: Bot<BotContext>, limit: number) => async 
     if (value === null || value === undefined || String(value).toLowerCase() === 'nan') {
       return null;
     }
-    if (typeof value === 'number') {
-      return parseFloat(value.toString()).toString()
-    }
     return String(value);
   };
 
@@ -35,7 +32,7 @@ const sendLargeMessageContacts = (bot: Bot<BotContext>, limit: number) => async 
       formatValue(contact.name) ? `${formatValue(contact.name)}` : null,
       formatValue(contact.description) ? `${formatValue(contact.description)}` : null,
       formatValue(contact.city) ? `${formatValue(contact.city)}` : null,
-      formatValue(contact.phone_1) ? `${formatValue(contact.phone_1)}` : null
+      contact.phone_1 ? formatValue(parseFloat(contact.phone_1).toString()) : null
     ].filter(Boolean);
 
     const contactInfo = contactParts.join(' – ') + '\n\n';
