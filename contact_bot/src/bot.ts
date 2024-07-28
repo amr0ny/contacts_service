@@ -296,7 +296,11 @@ export const handleAccountCommand = async (ctx: BotContext) => {
       ? `📅  Заканчивается: ${formatDate(subscriptionExpirationDate)}`
       : '';
 
-    const message = `📊 <b>Состояние подписки:</b>${subscriptionStatus}<br>📅 <b>${expirationMessage}</b><br>🔄 <b>Доступные запросы:</b> ${user.trial_state}`;
+    const message = `
+📊 <b>Состояние подписки:</b> ${subscriptionStatus}
+📅 <b>${expirationMessage}</b>
+🔄 <b>Доступные запросы:</b> ${user.trial_state}
+    `;
 
     await ctx.reply(message, { parse_mode: 'HTML' });
   } catch (error) {
