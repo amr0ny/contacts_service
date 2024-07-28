@@ -53,12 +53,12 @@ const config: Config = {
     port: Number(process.env.POSTGRES_PORT || ''),
   },
   acquiringConfig: {
-    terminalKey: '1721314296114DEMO',
-    password: 'bYIS4MnOKw8CgUC_',
+    terminalKey: process.env.ACQUIRING_TERMINAL_KEY || '',
+    password: process.env.ACQUIRING_PASSWORD || '',
     notificationURL: 'https://botrpk.ru/Notification',
     product: {
       amount: parseInt(process.env.PAYMENT_AMOUT || '15000', 10),
-      description: 'Доступ к базе РПК России',
+      description: process.env.PRODUCT_DESCRIPTION || '',
     }
   },
   corsOptions: {
