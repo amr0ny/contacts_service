@@ -19,10 +19,10 @@ bot.hears('👤 Аккаунт', handleAccountCommand);
 bot.callbackQuery('process_subscription', handleSubscriptionProcessQuery);
 
 bot.use(accessCheckMiddleware);
-bot.command('contacts', async (ctx) => {
+bot.command('search', async (ctx) => {
   await ctx.conversation.enter('handleContactsCommand');
 });
-bot.hears('📞 Контакты', async (ctx) => {
+bot.hears('🔍 Поиск', async (ctx) => {
   await ctx.conversation.enter('handleContactsCommand');
 });
 

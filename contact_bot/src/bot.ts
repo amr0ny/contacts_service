@@ -24,7 +24,7 @@ export const bot = new Bot<BotContext>(config.token);
 const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);
 
 const createMainKeyboard = () => new Keyboard()
-  .text('📞 Контакты').text('💳 Подписка')
+  .text('🔍 Поиск').text('💳 Подписка')
   .row().text('❓ Помощь').text('👤 Аккаунт')
   .resized();
 
