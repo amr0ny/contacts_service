@@ -11,17 +11,44 @@ import { getRequestWord } from './utils/wording';
 export type BotContext = Context &
   ConversationFlavor;
 
-const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (chatId: string | number, text: string, reply_markup: Other<RawApi, 'sendMessage', 'chat_id' | 'text'> | undefined) => {
-  const parts = text.match(new RegExp(`(.|[\r\n]){1,${limit}}`, 'g')) || [];
-  for (let i = 0; i < parts.length; i++) {
-    const isLastPart = i === parts.length - 1;
-    await bot.api.sendMessage(chatId, parts[i], isLastPart ? reply_markup : {});
+const sendLargeMessage = (bot: Bot<BotContext>, limit: number) => async (
+  chatId: string | number,
+  contacts: ContactPresentable[],
+  cityName: string,
+  reply_markup: Other<RawApi, 'sendMessage', 'chat_id' | 'text'> | undefined
+) => {
+  let currentMessage = `📋 Список РПК в городе ${cityName}:\n\n`;
+
+  const formatValue = (value: any): string => {
+    if (value === null || value === undefined || String(value).toLowerCase() === 'nan') {
+      return '-';
+    }
+    if (typeof value === 'number') {
+      return value.toString().replace(/\.0$/, '');
+    }
+    return String(value);
+  };
+
+  for (let i = 0; i < contacts.length; i++) {
+    const contact = contacts[i];
+    const contactInfo = `🏢 ${formatValue(contact.name)} – ${formatValue(contact.description)} – ${formatValue(contact.city)} – ${formatValue(contact.phone_1)}\n\n`;
+
+    if (currentMessage.length + contactInfo.length > limit) {
+      await bot.api.sendMessage(chatId, currentMessage.trim(), {});
+      currentMessage = contactInfo;
+    } else {
+      currentMessage += contactInfo;
+    }
+  }
+
+  // Send the last message with reply_markup
+  if (currentMessage.trim()) {
+    await bot.api.sendMessage(chatId, currentMessage.trim(), reply_markup);
   }
 };
 
 const TELEGRAM_MESSAGE_LIMIT = 4096;
 export const bot = new Bot<BotContext>(config.token);
-const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);
 
 const createMainKeyboard = () => new Keyboard()
   .text('🔍 Поиск').text('💳 Подписка')
@@ -135,7 +162,6 @@ ${user.subscription_expiration_date ? `✅ Доступно запросов: ${
     await ctx.reply('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
   }
 };
-
 export const handleContactsCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
   try {
     await ctx.reply('🏙️ Введите название города:', {
@@ -176,14 +202,14 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       return;
     }
 
-    const contactMessage = contacts.map((contact: ContactPresentable) => `🏢 ${contact.name}\n📝 ${contact.description}\n🏙️ ${contact.city}\n📞 ${contact.phone_1}`).join('\n\n');
-
     const chatId = ctx.chat?.id;
     if (!chatId) {
       throw new Error('Chat ID not found');
     }
 
-    await sendMessage(chatId, `📋 Список РПК в городе ${userResponse}:\n\n${contactMessage}`, {
+    const sendMessage = sendLargeMessage(bot, TELEGRAM_MESSAGE_LIMIT);  // 4096 - максимальная длина сообщения в Telegram
+
+    await sendMessage(chatId, contacts, userResponse, {
       reply_markup: createMainKeyboard(),
     });
   } catch (error) {
