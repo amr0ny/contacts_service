@@ -167,6 +167,19 @@ ${user.subscription_expiration_date ? `✅ Доступно запросов: ${
     await ctx.reply('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
   }
 };
+
+
+export const handleHelpCommand = async (ctx: BotContext) => {
+  await ctx.reply(`ℹ️ Доступные команды:
+
+🚀 /start - Начать работу с ботом
+🔍 /search - Поиск РПК по городу
+💳 /subscription - Управление подпиской
+👤 /account - Информация о подписке
+
+Если у вас остались вопросы, обратитесь в поддержку.`);
+};
+
 export const handleContactsCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
   try {
     await ctx.reply('🏙️ Введите название города:', {
@@ -225,16 +238,6 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
   }
 };
 
-export const handleHelpCommand = async (ctx: BotContext) => {
-  await ctx.reply(`ℹ️ Доступные команды:
-
-🚀 /start - Начать работу с ботом
-🔍 /search - Поиск РПК по городу
-💳 /subscription - Управление подпиской
-👤 /account - Информация о подписке
-
-Если у вас остались вопросы, обратитесь в поддержку.`);
-};
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
   await ctx.conversation.enter('handleSubscriptionConversation');
@@ -265,7 +268,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     return;
   }
 
-  // Продолжение процесса подписки...
   // Шаг 3: Запрашиваем email
   await ctx.reply('📧 Пожалуйста, введите ваш адрес электронной почты:');
 
