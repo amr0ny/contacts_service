@@ -239,58 +239,61 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
   await ctx.conversation.enter('handleSubscriptionConversation');
 };
+
 export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
-  try {
-    // Шаг 1: Показываем информацию о подписке
-    await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
+  // Шаг 1: Показываем информацию о подписке
+  await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 
 💼 Для неограниченного доступа оформите подписку:`, {
-      reply_markup: new InlineKeyboard()
-        .text(`✅ Купить за ${parseFloat((config.paymentAmount / 100).toString()).toString()} ₽`, 'confirm_subscription')
-        .text('❌ Отмена', 'cancel_subscription')
-    });
+    reply_markup: new InlineKeyboard()
+      .text(`✅ Купить за ${parseFloat((config.paymentAmount / 100).toString()).toString()} ₽`, 'confirm_subscription')
+      .text('❌ Отмена', 'cancel_subscription')
+  });
 
-    // Шаг 2: Ждем подтверждения покупки
-    const response = await conversation.waitFor('callback_query:data');
+  // Шаг 2: Ждем подтверждения покупки
+  const response = await conversation.waitFor('callback_query:data');
 
-    if (!response.callbackQuery) {
-      await ctx.reply('😕 Произошла ошибка. Пожалуйста, попробуйте еще раз.');
-      return;
-    }
+  if (!response.callbackQuery) {
+    await ctx.reply('😕 Произошла ошибка. Пожалуйста, попробуйте еще раз.');
+    return;
+  }
 
-    const query = response.callbackQuery as CallbackQuery;
+  const query = response.callbackQuery as CallbackQuery;
 
-    // Важно: отвечаем на callback query сразу
-    await ctx.answerCallbackQuery();
+  // Отвечаем на колбэк запрос немедленно
+  await ctx.answerCallbackQuery();
 
-    if (query.data === 'cancel_subscription') {
-      await ctx.reply('🚫 Оформление подписки отменено.');
-      return;
-    }
+  if (query.data === 'cancel_subscription') {
+    await ctx.reply('🚫 Оформление подписки отменено.');
+    return;
+  }
 
-    // Шаг 3: Запрашиваем email
-    await ctx.reply('📧 Пожалуйста, введите ваш адрес электронной почты:');
+  // Продолжение процесса подписки...
+  // Шаг 3: Запрашиваем email
+  await ctx.reply('📧 Пожалуйста, введите ваш адрес электронной почты:');
 
-    const { message } = await conversation.wait();
+  const { message } = await conversation.wait();
 
-    if (!message?.text) {
-      await ctx.reply('😕 Извините, не удалось распознать email. Попробуйте оформить подписку заново.');
-      return;
-    }
+  if (!message?.text) {
+    await ctx.reply('😕 Извините, не удалось распознать email. Попробуйте оформить подписку заново.');
+    return;
+  }
 
-    const email = message.text.trim();
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      await ctx.reply('❗ Некорректный формат электронной почты. Попробуйте оформить подписку заново.');
-      return;
-    }
+  const email = message.text.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  // Простая валидация email
+  if (!emailRegex.test(email)) {
+    await ctx.reply('❗ Некорректный формат электронной почты. Попробуйте оформить подписку заново.');
+    return;
+  }
 
-    const userId = ctx.from?.id;
-    if (!userId) {
-      await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
-      return;
-    }
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
+    return;
+  }
 
+  try {
     const user = await apiService.fetchUser({ userId });
     if (!user) {
       await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
@@ -302,7 +305,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
       return;
     }
 
-    const res = await apiService.initUserPayment({ userId, email });
+    const res = await apiService.initUserPayment({ userId: userId, email: email });
     if (!res || !res.payment_url) {
       throw new Error('Payment link is unavailable');
     }
