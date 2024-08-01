@@ -9,9 +9,8 @@ import { getRequestWord } from './utils/wording';
 import { CallbackQuery } from "@grammyjs/types";
 
 export interface BotSession {
-  waitingForEmail: boolean,
+  currentConversation?: 'subscription' | 'search',
 }
-
 
 export type BotContext = Context &
   ConversationFlavor & SessionFlavor<BotSession>;
@@ -128,6 +127,20 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
   }
 };
 
+export const conversationCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
+  if (ctx.session.currentConversation) {
+    if (ctx.session.currentConversation === 'search') {
+      await ctx.conversation.enter('handleContactsCommand');
+    } else if (ctx.session.currentConversation === 'subscription') {
+      await ctx.conversation.enter('handleSubscriptionConversation');
+    }
+  } else {
+    await next();
+  }
+};
+
+
+bot.use(conversationCheckMiddleware);
 
 export const handleStartCommand = async (ctx: BotContext) => {
   try {
@@ -185,6 +198,8 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 };
 
 export const handleContactsCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
+  ctx.session.currentConversation = 'search';
+
   try {
     await ctx.reply('🏙️ Введите название города:', {
       reply_markup: new Keyboard().text('⬅️ Назад').resized(),
@@ -196,6 +211,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('😕 Извините, не удалось распознать название города. Попробуйте еще раз с помощью /search.', {
         reply_markup: createMainKeyboard(),
       });
+      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -205,6 +221,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('👌 Вы вернулись в главное меню.', {
         reply_markup: createMainKeyboard(),
       });
+      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -212,6 +229,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('❗ Название города не может быть пустым. Попробуйте еще раз с помощью /search.', {
         reply_markup: createMainKeyboard(),
       });
+      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -221,6 +239,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply(`😔 К сожалению, РПК для города "${userResponse}" не найдены.`, {
         reply_markup: createMainKeyboard(),
       });
+      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -240,6 +259,7 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       reply_markup: createMainKeyboard(),
     });
   }
+  ctx.session.currentConversation = undefined;
 };
 
 
@@ -248,6 +268,7 @@ export const handleSubscriptionCommand = async (ctx: BotContext) => {
 };
 
 export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
+  ctx.session.currentConversation = 'search';
   // Шаг 1: Показываем информацию о подписке
   await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 
@@ -262,6 +283,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   if (!response.callbackQuery) {
     await ctx.reply('😕 Произошла ошибка. Пожалуйста, попробуйте еще раз.');
+    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -269,6 +291,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   if (query.data === 'cancel_subscription') {
     await ctx.reply('🚫 Оформление подписки отменено.');
+    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -279,6 +302,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   if (!message?.text) {
     await ctx.reply('😕 Извините, не удалось распознать email. Попробуйте оформить подписку заново.');
+    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -287,6 +311,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   // Простая валидация email
   if (!email.includes('@') || !email.includes('.')) {
     await ctx.reply('❗ Некорректный формат email. Попробуйте оформить подписку заново.');
+    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -294,6 +319,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
+    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -304,10 +330,12 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     if (!user) {
       await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
       return;
+      ctx.session.currentConversation = undefined;
     }
 
     if (user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
       await ctx.reply('✅ У вас уже есть активная подписка.');
+      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -324,6 +352,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     logger.error(`An error occurred while handling subscription process: ${error}`);
     await ctx.reply('😔 Произошла ошибка при оформлении подписки. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
   }
+  ctx.session.currentConversation = undefined;
 };
 
 export const handleAccountCommand = async (ctx: BotContext) => {

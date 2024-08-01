@@ -1,19 +1,23 @@
 import { session } from 'grammy';
 import { createConversation, conversations } from '@grammyjs/conversations';
-import { bot, BotSession, BotContext, handleContactsCommand, handleStartCommand, handleHelpCommand, handleSubscriptionConversation, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand } from './bot';
+import { bot, BotSession, BotContext, handleContactsCommand, handleStartCommand, handleHelpCommand, handleSubscriptionConversation, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand, conversationCheckMiddleware } from './bot';
 
 
-function initial(): BotSession {
-  return { waitingForEmail: false };
-}
-bot.use(session({ initial }));
+
+bot.use(session({
+  initial: (): BotSession => ({
+    currentConversation: undefined
+  })
+}));
 bot.use(conversations());
 bot.use(createConversation(handleContactsCommand));
 bot.use(createConversation(handleSubscriptionConversation));
 
+bot.use(userCheckMiddleware);
+bot.use(conversationCheckMiddleware);
+
 bot.command('start', handleStartCommand);
 
-bot.use(userCheckMiddleware);
 bot.command('help', handleHelpCommand);
 bot.command('account', handleAccountCommand);
 
