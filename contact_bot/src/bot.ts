@@ -265,13 +265,16 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   const query = response.callbackQuery as CallbackQuery;
 
-  // Отвечаем на колбэк запрос немедленно
-  await ctx.answerCallbackQuery();
+  // Отвечаем на CallbackQuery немедленно
+  await ctx.api.answerCallbackQuery(query.id);
 
   if (query.data === 'cancel_subscription') {
     await ctx.reply('🚫 Оформление подписки отменено.');
     return;
   }
+
+  // Логирование для отладки
+  logger.info(`Пользователь ${ctx.from?.id} подтвердил подписку`);
 
   // Продолжение процесса подписки...
   // Шаг 3: Запрашиваем email
@@ -315,6 +318,9 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
       throw new Error('Payment link is unavailable');
     }
 
+    // Логирование для отладки
+    logger.info(`Платежная ссылка для пользователя ${userId}: ${res.payment_url}`);
+
     await ctx.reply('💳 Оплата банковской картой РФ', {
       reply_markup: new InlineKeyboard().url('💸 Перейти к оплате', res.payment_url)
     });
@@ -324,6 +330,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     await ctx.reply('😔 Произошла ошибка при оформлении подписки. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
   }
 };
+
 
 export const handleAccountCommand = async (ctx: BotContext) => {
   try {
