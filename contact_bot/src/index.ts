@@ -1,26 +1,24 @@
-import { session } from 'grammy';
 import { createConversation, conversations } from '@grammyjs/conversations';
-import { bot, BotSession, BotContext, handleContactsCommand, handleStartCommand, handleHelpCommand, handleSubscriptionCommand, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand } from './bot';
-
-function initial(): BotSession {
-  return { waitingForEmail: false };
-}
-bot.use(session({ initial }));
+import { bot, BotContext, handleContactsCommand, handleStartCommand, handleHelpCommand, handleSubscriptionConversation, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand } from './bot';
 
 bot.use(conversations());
 
 bot.use(createConversation(handleContactsCommand));
+bot.use(createConversation(handleSubscriptionConversation));
+
 bot.command('start', handleStartCommand);
 
 bot.use(userCheckMiddleware);
 bot.command('help', handleHelpCommand);
-bot.command('subscription', handleSubscriptionCommand);
-bot.callbackQuery('process_subscription', handleSubscriptionProcessQuery);
-bot.on('message:text', handleEmailInput);
 bot.command('account', handleAccountCommand);
-bot.command('subscription', handleSubscriptionCommand);
-bot.hears('💳 Подписка', handleSubscriptionCommand);
-bot.hears('💳 Подписка', handleSubscriptionCommand);
+
+bot.command('subscription', async (ctx) => {
+  await ctx.conversation.enter('handleSubscriptionConversation');
+});
+bot.hears('💳 Подписка', async (ctx) => {
+  await ctx.conversation.enter('handleSubscriptionConversation');
+});
+
 bot.hears('❓ Помощь', handleHelpCommand);
 bot.hears('👤 Аккаунт', handleAccountCommand);
 
