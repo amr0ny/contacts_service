@@ -75,6 +75,7 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
 
   await next();
 };
+
 export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   try {
     const userId = ctx.from?.id;
@@ -90,15 +91,9 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     }
 
     const now = new Date();
-    let expirationDate: Date | undefined = undefined;
-    if (user.subscription_expiration_date) {
-      expirationDate = new Date(user.subscription_expiration_date);
-      if (isNaN(expirationDate.getTime())) {
-        logger.error('Invalid expiration date:', user.subscription_expiration_date);
-        await ctx.reply('Произошла ошибка с датой окончания подписки. Пожалуйста, обратитесь в службу поддержки.');
-        return;
-      }
-    }
+    const expirationDate = user.subscription_expiration_date
+      ? new Date(user.subscription_expiration_date)
+      : undefined; // Если дата не определена, используем прошедшую дату
 
     if (user.trial_state > 0) {
       if (expirationDate) {
@@ -106,10 +101,10 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
           await next();
           await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
         } else {
-          await ctx.reply('Срок действия вашей пробной подписки истек. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
+          ctx.reply('Срок действия вашей пробной подписки истек. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
         }
       } else {
-        await next();
+        await next()
         await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
       }
     } else {
@@ -118,8 +113,9 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
           await ctx.reply('У вас закончились запросы в рамках подписки. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
           return;
         }
-      } else {
-        await ctx.reply('У вас закончились пробные запросы. Приобретите подписку, чтобы продолжить пользоваться сервисом.');
+      }
+      else {
+        await ctx.reply('У вас закончились пробные запросы. Приобретите подписку, чтобы продолжить пользоваться сервисом.')
       }
     }
   } catch (error) {
@@ -127,7 +123,6 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
   }
 };
-
 
 
 export const handleStartCommand = async (ctx: BotContext) => {
@@ -265,16 +260,10 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   const query = response.callbackQuery as CallbackQuery;
 
-  // Отвечаем на CallbackQuery немедленно
-  await ctx.api.answerCallbackQuery(query.id);
-
   if (query.data === 'cancel_subscription') {
     await ctx.reply('🚫 Оформление подписки отменено.');
     return;
   }
-
-  // Логирование для отладки
-  logger.info(`Пользователь ${ctx.from?.id} подтвердил подписку`);
 
   // Продолжение процесса подписки...
   // Шаг 3: Запрашиваем email
@@ -288,13 +277,14 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   }
 
   const email = message.text.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   // Простая валидация email
-  if (!emailRegex.test(email)) {
-    await ctx.reply('❗ Некорректный формат электронной почты. Попробуйте оформить подписку заново.');
+  if (!email.includes('@') || !email.includes('.')) {
+    await ctx.reply('❗ Некорректный формат email. Попробуйте оформить подписку заново.');
     return;
   }
 
+  // Шаг 4: Сохраняем email и инициируем оплату
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
@@ -302,6 +292,8 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   }
 
   try {
+    await apiService.updateUser(userId, { email: email });
+
     const user = await apiService.fetchUser({ userId });
     if (!user) {
       await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
@@ -318,9 +310,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
       throw new Error('Payment link is unavailable');
     }
 
-    // Логирование для отладки
-    logger.info(`Платежная ссылка для пользователя ${userId}: ${res.payment_url}`);
-
     await ctx.reply('💳 Оплата банковской картой РФ', {
       reply_markup: new InlineKeyboard().url('💸 Перейти к оплате', res.payment_url)
     });
@@ -330,7 +319,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     await ctx.reply('😔 Произошла ошибка при оформлении подписки. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
   }
 };
-
 
 export const handleAccountCommand = async (ctx: BotContext) => {
   try {
