@@ -1,5 +1,5 @@
 import config, { logger } from './config';
-import { Context, NextFunction, Keyboard, Bot, InlineKeyboard, SessionFlavor } from 'grammy';
+import { Context, NextFunction, Keyboard, Bot, InlineKeyboard } from 'grammy';
 import { type Other } from 'grammy/out/core/api.d';
 import { type RawApi } from 'grammy/out/core/client.d';
 import { type Conversation, type ConversationFlavor } from '@grammyjs/conversations';
@@ -8,12 +8,9 @@ import { apiService } from './requests/apiService';
 import { getRequestWord } from './utils/wording';
 import { CallbackQuery } from "@grammyjs/types";
 
-export interface BotSession {
-  currentConversation?: 'subscription' | 'search',
-}
 
 export type BotContext = Context &
-  ConversationFlavor & SessionFlavor<BotSession>;
+  ConversationFlavor;
 
 const sendLargeMessageContacts = (bot: Bot<BotContext>, limit: number) => async (
   chatId: string | number,
@@ -127,20 +124,6 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
   }
 };
 
-export const conversationCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
-  if (ctx.session.currentConversation) {
-    if (ctx.session.currentConversation === 'search') {
-      await ctx.conversation.enter('handleContactsCommand');
-    } else if (ctx.session.currentConversation === 'subscription') {
-      await ctx.conversation.enter('handleSubscriptionConversation');
-    }
-  } else {
-    await next();
-  }
-};
-
-
-bot.use(conversationCheckMiddleware);
 
 export const handleStartCommand = async (ctx: BotContext) => {
   try {
@@ -184,22 +167,7 @@ ${user.subscription_expiration_date ? `✅ Доступно запросов: ${
     await ctx.reply('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.').catch((replyError) => logger.error(`Failed to send error message to user: ${replyError}`));
   }
 };
-
-
-export const handleHelpCommand = async (ctx: BotContext) => {
-  await ctx.reply(`ℹ️ Доступные команды:
-
-🚀 /start - Начать работу с ботом
-🔍 /search - Поиск РПК по городу
-💳 /subscription - Управление подпиской
-👤 /account - Информация о подписке
-
-Если у вас остались вопросы, обратитесь в поддержку.`);
-};
-
 export const handleContactsCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
-  ctx.session.currentConversation = 'search';
-
   try {
     await ctx.reply('🏙️ Введите название города:', {
       reply_markup: new Keyboard().text('⬅️ Назад').resized(),
@@ -211,7 +179,6 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('😕 Извините, не удалось распознать название города. Попробуйте еще раз с помощью /search.', {
         reply_markup: createMainKeyboard(),
       });
-      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -221,7 +188,6 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('👌 Вы вернулись в главное меню.', {
         reply_markup: createMainKeyboard(),
       });
-      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -229,7 +195,6 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply('❗ Название города не может быть пустым. Попробуйте еще раз с помощью /search.', {
         reply_markup: createMainKeyboard(),
       });
-      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -239,7 +204,6 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       await ctx.reply(`😔 К сожалению, РПК для города "${userResponse}" не найдены.`, {
         reply_markup: createMainKeyboard(),
       });
-      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -259,16 +223,24 @@ export const handleContactsCommand = async (conversation: Conversation<BotContex
       reply_markup: createMainKeyboard(),
     });
   }
-  ctx.session.currentConversation = undefined;
 };
 
+export const handleHelpCommand = async (ctx: BotContext) => {
+  await ctx.reply(`ℹ️ Доступные команды:
+
+🚀 /start - Начать работу с ботом
+🔍 /search - Поиск РПК по городу
+💳 /subscription - Управление подпиской
+👤 /account - Информация о подписке
+
+Если у вас остались вопросы, обратитесь в поддержку.`);
+};
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
   await ctx.conversation.enter('handleSubscriptionConversation');
 };
 
 export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
-  ctx.session.currentConversation = 'search';
   // Шаг 1: Показываем информацию о подписке
   await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 
@@ -283,7 +255,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   if (!response.callbackQuery) {
     await ctx.reply('😕 Произошла ошибка. Пожалуйста, попробуйте еще раз.');
-    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -291,10 +262,10 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   if (query.data === 'cancel_subscription') {
     await ctx.reply('🚫 Оформление подписки отменено.');
-    ctx.session.currentConversation = undefined;
     return;
   }
 
+  // Продолжение процесса подписки...
   // Шаг 3: Запрашиваем email
   await ctx.reply('📧 Пожалуйста, введите ваш адрес электронной почты:');
 
@@ -302,7 +273,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
 
   if (!message?.text) {
     await ctx.reply('😕 Извините, не удалось распознать email. Попробуйте оформить подписку заново.');
-    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -311,7 +281,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   // Простая валидация email
   if (!email.includes('@') || !email.includes('.')) {
     await ctx.reply('❗ Некорректный формат email. Попробуйте оформить подписку заново.');
-    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -319,7 +288,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
-    ctx.session.currentConversation = undefined;
     return;
   }
 
@@ -330,12 +298,10 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     if (!user) {
       await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
       return;
-      ctx.session.currentConversation = undefined;
     }
 
     if (user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
       await ctx.reply('✅ У вас уже есть активная подписка.');
-      ctx.session.currentConversation = undefined;
       return;
     }
 
@@ -352,7 +318,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
     logger.error(`An error occurred while handling subscription process: ${error}`);
     await ctx.reply('😔 Произошла ошибка при оформлении подписки. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
   }
-  ctx.session.currentConversation = undefined;
 };
 
 export const handleAccountCommand = async (ctx: BotContext) => {
