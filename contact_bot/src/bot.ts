@@ -235,9 +235,8 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 
 Если у вас остались вопросы, обратитесь в поддержку.`);
 };
-
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
-  await ctx.conversation.enter('handleSubscriptionConversation');
+  await ctx.conversation.enter('subscriptionConversation');
 };
 
 export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
@@ -251,21 +250,16 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   });
 
   // Шаг 2: Ждем подтверждения покупки
-  const response = await conversation.waitFor('callback_query:data');
+  const response = await conversation.waitForCallbackQuery(['confirm_subscription', 'cancel_subscription']);
 
-  if (!response.callbackQuery) {
-    await ctx.reply('😕 Произошла ошибка. Пожалуйста, попробуйте еще раз.');
-    return;
-  }
-
-  const query = response.callbackQuery as CallbackQuery;
-
-  if (query.data === 'cancel_subscription') {
+  if (response.callbackQuery.data === 'cancel_subscription') {
+    await ctx.answerCallbackQuery();
     await ctx.reply('🚫 Оформление подписки отменено.');
     return;
   }
 
-  // Продолжение процесса подписки...
+  await ctx.answerCallbackQuery();
+
   // Шаг 3: Запрашиваем email
   await ctx.reply('📧 Пожалуйста, введите ваш адрес электронной почты:');
 
