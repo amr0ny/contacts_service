@@ -6,6 +6,7 @@ import { type Conversation, type ConversationFlavor } from '@grammyjs/conversati
 import { ContactPresentable } from './schemas';
 import { apiService } from './requests/apiService';
 import { getRequestWord } from './utils/wording';
+import { CallbackQuery } from "@grammyjs/types";
 
 
 export type BotContext = Context &
@@ -236,29 +237,71 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 };
 
 export const handleSubscriptionCommand = async (ctx: BotContext) => {
+  await ctx.conversation.enter('handleSubscriptionConversation');
+};
+
+export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
+  // Шаг 1: Показываем информацию о подписке
   await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 
 💼 Для неограниченного доступа оформите подписку:`, {
-    reply_markup: new InlineKeyboard().text(`✅ Купить за ${parseFloat((config.paymentAmount / 100).toString()).toString()} ₽`, 'process_subscription')
+    reply_markup: new InlineKeyboard()
+      .text(`✅ Купить за ${parseFloat((config.paymentAmount / 100).toString()).toString()} ₽`, 'confirm_subscription')
+      .text('❌ Отмена', 'cancel_subscription')
   });
-};
 
-export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
-  if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
-    await ctx.answerCallbackQuery('😔 Произошла ошибка. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
+  // Шаг 2: Ждем подтверждения покупки
+  const response = await conversation.waitFor('callback_query:data');
+
+  if (!response.callbackQuery) {
+    await ctx.reply('😕 Произошла ошибка. Пожалуйста, попробуйте еще раз.');
+    return;
+  }
+
+  const query = response.callbackQuery as CallbackQuery;
+
+  if (query.data === 'cancel_subscription') {
+    await ctx.reply('🚫 Оформление подписки отменено.');
+    return;
+  }
+
+  // Продолжение процесса подписки...
+  // Шаг 3: Запрашиваем email
+  await ctx.reply('📧 Пожалуйста, введите ваш адрес электронной почты:');
+
+  const { message } = await conversation.wait();
+
+  if (!message?.text) {
+    await ctx.reply('😕 Извините, не удалось распознать email. Попробуйте оформить подписку заново.');
+    return;
+  }
+
+  const email = message.text.trim();
+
+  // Простая валидация email
+  if (!email.includes('@') || !email.includes('.')) {
+    await ctx.reply('❗ Некорректный формат email. Попробуйте оформить подписку заново.');
+    return;
+  }
+
+  // Шаг 4: Сохраняем email и инициируем оплату
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
     return;
   }
 
   try {
-    const userId = ctx.from?.id;
-    if (!userId) {
-      await ctx.answerCallbackQuery('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
+    await apiService.updateUser(userId, { email: email });
+
+    const user = await apiService.fetchUser({ userId });
+    if (!user) {
+      await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
       return;
     }
 
-    const user = await apiService.fetchUser({ userId });
-    if (user && user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
-      await ctx.answerCallbackQuery('✅ У вас уже есть активная подписка.');
+    if (user.subscription_expiration_date && new Date(user.subscription_expiration_date) > new Date()) {
+      await ctx.reply('✅ У вас уже есть активная подписка.');
       return;
     }
 
@@ -267,23 +310,13 @@ export const handleSubscriptionProcessQuery = async (ctx: BotContext) => {
       throw new Error('Payment link is unavailable');
     }
 
-    await ctx.answerCallbackQuery();
-    await ctx.editMessageText('💳 Оплата банковской картой РФ', {
+    await ctx.reply('💳 Оплата банковской картой РФ', {
       reply_markup: new InlineKeyboard().url('💸 Перейти к оплате', res.payment_url)
     });
 
   } catch (error) {
-    logger.error(`An error occurred while handling initializing payment for subscription: ${error}`);
-
-    if (error instanceof Error) {
-      if (error.message === 'Payment link is unavailable') {
-        await ctx.answerCallbackQuery('😔 Извините, сервис оплаты временно недоступен. Пожалуйста, попробуйте позже.');
-      } else {
-        await ctx.answerCallbackQuery('❗ Произошла ошибка при обработке запроса. Пожалуйста, попробуйте позже.');
-      }
-    } else {
-      await ctx.answerCallbackQuery('🤔 Произошла неизвестная ошибка. Пожалуйста, попробуйте позже.');
-    }
+    logger.error(`An error occurred while handling subscription process: ${error}`);
+    await ctx.reply('😔 Произошла ошибка при оформлении подписки. Пожалуйста, попробуйте позже или обратитесь в поддержку.');
   }
 };
 
