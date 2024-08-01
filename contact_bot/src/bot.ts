@@ -75,7 +75,6 @@ export const userCheckMiddleware = async (ctx: BotContext, next: NextFunction) =
 
   await next();
 };
-
 export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction) => {
   try {
     const userId = ctx.from?.id;
@@ -91,9 +90,15 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     }
 
     const now = new Date();
-    const expirationDate = user.subscription_expiration_date
-      ? new Date(user.subscription_expiration_date)
-      : undefined; // Если дата не определена, используем прошедшую дату
+    let expirationDate: Date | undefined = undefined;
+    if (user.subscription_expiration_date) {
+      expirationDate = new Date(user.subscription_expiration_date);
+      if (isNaN(expirationDate.getTime())) {
+        logger.error('Invalid expiration date:', user.subscription_expiration_date);
+        await ctx.reply('Произошла ошибка с датой окончания подписки. Пожалуйста, обратитесь в службу поддержки.');
+        return;
+      }
+    }
 
     if (user.trial_state > 0) {
       if (expirationDate) {
@@ -101,10 +106,10 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
           await next();
           await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
         } else {
-          ctx.reply('Срок действия вашей пробной подписки истек. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
+          await ctx.reply('Срок действия вашей пробной подписки истек. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
         }
       } else {
-        await next()
+        await next();
         await apiService.updateUser(userId, { trial_state: user.trial_state - 1 });
       }
     } else {
@@ -113,9 +118,8 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
           await ctx.reply('У вас закончились запросы в рамках подписки. Чтобы продолжить пользоваться сервисом, вам нужно оформить новую подписку.');
           return;
         }
-      }
-      else {
-        await ctx.reply('У вас закончились пробные запросы. Приобретите подписку, чтобы продолжить пользоваться сервисом.')
+      } else {
+        await ctx.reply('У вас закончились пробные запросы. Приобретите подписку, чтобы продолжить пользоваться сервисом.');
       }
     }
   } catch (error) {
@@ -123,6 +127,7 @@ export const accessCheckMiddleware = async (ctx: BotContext, next: NextFunction)
     await ctx.reply('Произошла ошибка. Попробуйте еще раз позже или обратитесь в службу поддержки.');
   }
 };
+
 
 
 export const handleStartCommand = async (ctx: BotContext) => {
