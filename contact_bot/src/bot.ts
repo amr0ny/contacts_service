@@ -6,7 +6,6 @@ import { type Conversation, type ConversationFlavor } from '@grammyjs/conversati
 import { ContactPresentable } from './schemas';
 import { apiService } from './requests/apiService';
 import { getRequestWord } from './utils/wording';
-import { CallbackQuery } from "@grammyjs/types";
 
 
 export type BotContext = Context &
