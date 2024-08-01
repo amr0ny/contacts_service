@@ -286,8 +286,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   }
 
   try {
-    await apiService.updateUser(userId, { email: email });
-
     const user = await apiService.fetchUser({ userId });
     if (!user) {
       await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
