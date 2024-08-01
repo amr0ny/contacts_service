@@ -1,6 +1,10 @@
+import { session } from 'grammy';
 import { createConversation, conversations } from '@grammyjs/conversations';
 import { bot, BotContext, handleContactsCommand, handleStartCommand, handleHelpCommand, handleSubscriptionConversation, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand } from './bot';
 
+
+bot.use(session({ initial: () => ({}) }));
+bot.use(conversations());
 bot.use(conversations());
 
 bot.use(createConversation(handleContactsCommand));
