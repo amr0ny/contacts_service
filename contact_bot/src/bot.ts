@@ -234,11 +234,8 @@ export const handleHelpCommand = async (ctx: BotContext) => {
 
 Если у вас остались вопросы, обратитесь в поддержку.`);
 };
-export const handleSubscriptionCommand = async (ctx: BotContext) => {
-  await ctx.conversation.enter('subscriptionConversation');
-};
 
-export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
+export const handleSubscriptionCommand = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
   // Шаг 1: Показываем информацию о подписке
   await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 

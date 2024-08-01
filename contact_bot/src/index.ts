@@ -1,20 +1,24 @@
 
 import { session } from 'grammy';
 import { createConversation, conversations } from '@grammyjs/conversations';
-import { bot, handleContactsCommand, handleStartCommand, handleHelpCommand, handleSubscriptionCommand, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand, handleSubscriptionConversation } from './bot';
+import { bot, handleContactsCommand, handleStartCommand, handleHelpCommand, accessCheckMiddleware, userCheckMiddleware, handleAccountCommand, handleSubscriptionCommand } from './bot';
 
 bot.use(session({ initial: () => ({}) }));
 bot.use(conversations());
 
 bot.use(createConversation(handleContactsCommand));
-bot.use(createConversation(handleSubscriptionConversation));
+bot.use(createConversation(handleSubscriptionCommand));
 bot.command('start', handleStartCommand);
 
 bot.use(userCheckMiddleware);
 bot.command('help', handleHelpCommand);
-bot.command('subscription', handleSubscriptionCommand);
+bot.command('subscription', async (ctx) => {
+  await ctx.conversation.enter('handleSubscriptionCommand')
+});
+bot.hears('💳 Подписка', async (ctx) => {
+  await ctx.conversation.enter('handleSubscriptionCommand')
+});
 bot.command('account', handleAccountCommand);
-bot.hears('💳 Подписка', handleSubscriptionCommand);
 bot.hears('❓ Помощь', handleHelpCommand);
 bot.hears('👤 Аккаунт', handleAccountCommand);
 
