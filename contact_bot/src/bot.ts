@@ -1,5 +1,5 @@
 import config, { logger } from './config';
-import { Context, NextFunction, Keyboard, Bot, InlineKeyboard } from 'grammy';
+import { Context, NextFunction, Keyboard, Bot, InlineKeyboard, SessionFlavor } from 'grammy';
 import { type Other } from 'grammy/out/core/api.d';
 import { type RawApi } from 'grammy/out/core/client.d';
 import { type Conversation, type ConversationFlavor } from '@grammyjs/conversations';
@@ -8,9 +8,13 @@ import { apiService } from './requests/apiService';
 import { getRequestWord } from './utils/wording';
 import { CallbackQuery } from "@grammyjs/types";
 
+export interface BotSession {
+  waitingForEmail: boolean,
+}
+
 
 export type BotContext = Context &
-  ConversationFlavor;
+  ConversationFlavor & SessionFlavor<BotSession>;
 
 const sendLargeMessageContacts = (bot: Bot<BotContext>, limit: number) => async (
   chatId: string | number,
