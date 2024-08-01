@@ -12,8 +12,13 @@ interface AcquiringConfig {
   notificationURL: string,
   product: {
     amount: number,
+    name: string,
     description: string,
+    tax: string,
   }
+  taxation: string,
+  paymentMethod: string,
+  paymentObject: string,
 }
 
 interface CorsOptions {
@@ -31,6 +36,7 @@ interface Config {
   userTrialSubscriptionState: number,
   expiresIn: number,
   paymentAmount: number,
+  mapiUrls: { [index: string]: string },
   poolConfig: PoolConfig,
   acquiringConfig: AcquiringConfig,
   corsOptions: CorsOptions,
@@ -45,6 +51,10 @@ const config: Config = {
   userTrialSubscriptionState: parseInt(process.env.USER_TRIAL_SUBSCRIPTION_STATE || '30', 10),
   expiresIn: parseInt(process.env.EXPIRES_IN || '30', 10),
   paymentAmount: parseInt(process.env.PAYMENT_AMOUNT || '15000', 10),
+  mapiUrls: {
+    initUrl: 'https://securepay.tinkoff.ru/v2/Init',
+    closingReceiptUrl: 'https://securepay.tinkoff.ru/cashbox/SendClosingReceipt'
+  },
   poolConfig: {
     user: process.env.POSTGRES_USER || '',
     host: process.env.POSTGRES_HOST || '',
@@ -56,9 +66,15 @@ const config: Config = {
     terminalKey: process.env.ACQUIRING_TERMINAL_KEY || '',
     password: process.env.ACQUIRING_PASSWORD || '',
     notificationURL: 'https://botrpk.ru/Notification',
+    taxation: 'osn',
+    paymentMethod: 'full_prepayment',
+    paymentObject: 'service',
     product: {
+      name: 'Подписка на Бота РПК',
+      tax: 'none',
       amount: parseInt(process.env.PAYMENT_AMOUNT || '15000', 10),
       description: process.env.PRODUCT_DESCRIPTION || '',
+
     }
   },
   corsOptions: {

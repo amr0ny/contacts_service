@@ -29,5 +29,12 @@ const NotificationRequest = Joi.object({
   DATA: Joi.object()
 
 });
+
+const ClosingReceiptResponse = Joi.object({
+  Success: Joi.bool(),
+  ErrorCode: Joi.string(),
+  Message: Joi.string(),
+});
 export const validateInitResponse = (res: any) => InitResponse.validate(res);
 export const validateNotificationRequest = (req: any) => NotificationRequest.validate(req);
+export const validateClosingReceiptResponse = (res: any) => ClosingReceiptResponse.validate(res);

@@ -1,3 +1,4 @@
+import config from "./config";
 
 export interface User {
   id: string,
@@ -27,7 +28,6 @@ export interface Contact {
   telegram_3?: string;
 }
 
-
 type PresentableFields<T, K extends keyof T> = Pick<T, K>;
 
 export type ContactPresentable = PresentableFields<Contact, 'name' | 'description' | 'city' | 'phone_1'>;
@@ -46,9 +46,44 @@ export interface Transaction {
   user_id: string,
   amount: number,
   status: string,
+  email: string,
   created_at?: Date,
 };
+
 
 export type TransactionAllowedField = 'status' | 'payment_id';
 export type TransactionField = keyof Transaction;
 export const transactionAllowedFields: TransactionAllowedField[] = ['status', 'payment_id'];
+
+interface ReceiptItem {
+  Name: string,
+  Price: number,
+  Quantity: number
+  Amount: number,
+  PaymentObject: string,
+  Tax: string,
+
+};
+
+interface Receipt {
+  Items: ReceiptItem[],
+  Email: string,
+  Taxation: string,
+};
+
+export const formReceipt = (email: string): Receipt => {
+  return {
+    Email: email,
+    Taxation: config.acquiringConfig.taxation,
+    Items: [
+      {
+        Name: config.acquiringConfig.product.name,
+        Price: config.acquiringConfig.product.amount,
+        Amount: config.acquiringConfig.product.amount,
+        Quantity: 1,
+        PaymentObject: config.acquiringConfig.paymentObject,
+        Tax: config.acquiringConfig.product.tax
+      }
+    ]
+  }
+};

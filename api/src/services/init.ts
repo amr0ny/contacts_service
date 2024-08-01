@@ -14,6 +14,7 @@ export async function initTransactionTable() {
           user_id UUID NOT NULL,
           amount INTEGER NOT NULL,
           status VARCHAR(20) NOT NULL,
+          email VARCHAR(64) NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id)
         );

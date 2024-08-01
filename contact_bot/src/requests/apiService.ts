@@ -72,10 +72,10 @@ class ApiService {
     }
   }
 
-  public async initUserPayment({ userId }: InitUserPaymentRequest): Promise<InitTransactionResponse> {
+  public async initUserPayment({ userId, email }: InitUserPaymentRequest): Promise<InitTransactionResponse> {
     try {
       const url = endpoints.initUserPayment();
-      const response = await this.apiClient.post(url, { user_id: userId });
+      const response = await this.apiClient.post(url, { user_id: userId, email: email });
       return this.handleResponse(response);
     } catch (error) {
       return this.handleError(error);

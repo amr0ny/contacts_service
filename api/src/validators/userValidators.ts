@@ -17,6 +17,13 @@ export const userSchema = Joi.object({
     created_at: Joi.date(),
 });
 
+const paymentInitSchema = Joi.object({
+    user_id: Joi.number().required().integer(),
+    email: Joi.string().required().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).messages({
+        'string.pattern.base': 'Wrong email format'
+    })
+});
+
 const userUpdateSchema = userSchema.keys({
     id: Joi.forbidden(),
     user_id: Joi.forbidden(),
@@ -31,3 +38,4 @@ const userUpdateSchema = userSchema.keys({
 export const validateUserId = (user: any) => userIdSchema.validate(user);
 export const validateUser = (user: any) => userSchema.validate(user);
 export const validateUpdateUser = (user: any) => userUpdateSchema.validate(user, { abortEarly: false });
+export const validatePaymentInit = (user: any) => paymentInitSchema.validate(user);

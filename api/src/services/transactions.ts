@@ -36,15 +36,16 @@ export async function createTransaction(
   paymentId: string,
   userId: string,
   amount: number,
-  status: string
+  status: string,
+  email: string
 ): Promise<Transaction> {
   return withDB<Transaction>(async (client) => {
 
     const result = await client.query<Transaction>(
       `INSERT INTO transactions (id, payment_id, user_id, amount, status)
-       VALUES ($1, $2, $3, $4, $5)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [orderId, paymentId, userId, amount, status]
+      [orderId, paymentId, userId, amount, status, email]
     );
 
     return result.rows[0] || null;

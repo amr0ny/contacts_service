@@ -241,6 +241,7 @@ export const handleSubscriptionCommand = async (ctx: BotContext) => {
 };
 
 export const handleSubscriptionConversation = async (conversation: Conversation<BotContext>, ctx: BotContext) => {
+
   // Шаг 1: Показываем информацию о подписке
   await ctx.reply(`🎁 Бот предоставляет ${config.userTrialState} бесплатных ${getRequestWord(config.userTrialState)}.
 
@@ -277,14 +278,13 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   }
 
   const email = message.text.trim();
-
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   // Простая валидация email
-  if (!email.includes('@') || !email.includes('.')) {
-    await ctx.reply('❗ Некорректный формат email. Попробуйте оформить подписку заново.');
+  if (!emailRegex.test(email)) {
+    await ctx.reply('❗ Некорректный формат электронной почты. Попробуйте оформить подписку заново.');
     return;
   }
 
-  // Шаг 4: Сохраняем email и инициируем оплату
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.reply('🤔 Не удалось идентифицировать пользователя. Пожалуйста, попробуйте еще раз.');
@@ -292,8 +292,6 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
   }
 
   try {
-    await apiService.updateUser(userId, { email: email });
-
     const user = await apiService.fetchUser({ userId });
     if (!user) {
       await ctx.reply('Пользователь не найден, пожалуйста, перезапустите бота: /start');
@@ -305,7 +303,7 @@ export const handleSubscriptionConversation = async (conversation: Conversation<
       return;
     }
 
-    const res = await apiService.initUserPayment({ userId: userId });
+    const res = await apiService.initUserPayment({ userId: userId, email: email });
     if (!res || !res.payment_url) {
       throw new Error('Payment link is unavailable');
     }

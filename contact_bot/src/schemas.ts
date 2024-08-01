@@ -34,6 +34,7 @@ export interface UserDetailRequest {
 
 export interface InitUserPaymentRequest {
   userId: number;
+  email: string;
 }
 
 export interface CreateUserRequest {
